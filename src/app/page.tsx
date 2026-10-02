@@ -121,7 +121,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
                   {c.no} · {c.en}
                 </span>
                 <span className="text-[15px] font-semibold">{c.th}</span>
-                <span className={cx(mono, 'text-2xl font-bold')}>{snap.chain?.[i] ?? '—'}</span>
+                <span className={cx(mono, 'text-2xl font-bold')}>{i === 4 ? d.ciCount.toLocaleString('en-US') : (snap.chain?.[i] ?? '—')}</span>
                 <span className="text-xs text-muted">{c.what}</span>
               </div>
             ))}

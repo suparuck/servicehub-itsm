@@ -34,6 +34,8 @@ const label = 'text-[13px] font-medium text-ink';
 
 export function IncidentForm(p: IncidentFormProps) {
   const [state, formAction, pending] = useActionState(p.action, undefined);
+  const v = state?.values;
+  const val = (k: string, init = '') => (v ? String(v[k] ?? '') : init);
   const [impact, setImpact] = useState<Level>(p.initial?.impact ?? 'MED');
   const [urgency, setUrgency] = useState<Level>(p.initial?.urgency ?? 'MED');
   const f = th.incident.form;
@@ -49,12 +51,12 @@ export function IncidentForm(p: IncidentFormProps) {
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="title" className={label}>{f.title} <span aria-hidden="true" className="text-critical">*</span></label>
-        <input id="title" name="title" required maxLength={200} defaultValue={p.initial?.title} placeholder={f.titleHint} className={field} />
+        <input id="title" name="title" required maxLength={200} defaultValue={val('title', p.initial?.title)} key={`t${state?.error}`} placeholder={f.titleHint} className={field} />
       </div>
 
       <div className="flex flex-col gap-1.5">
         <label htmlFor="description" className={label}>{f.description}</label>
-        <textarea id="description" name="description" rows={5} defaultValue={p.initial?.description} className={`${field} py-3 leading-relaxed`} />
+        <textarea id="description" name="description" rows={5} defaultValue={val('description', p.initial?.description)} key={`d${state?.error}`} className={`${field} py-3 leading-relaxed`} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -79,13 +81,13 @@ export function IncidentForm(p: IncidentFormProps) {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Select id="serviceId" label={f.service} none={f.none} options={p.services} value={p.initial?.serviceId} />
+        <Select id="serviceId" label={f.service} none={f.none} options={p.services} value={val('serviceId', p.initial?.serviceId)} k={state?.error} />
         <div className="flex flex-col gap-1.5">
           <label htmlFor="category" className={label}>{f.category}</label>
-          <input id="category" name="category" defaultValue={p.initial?.category} placeholder="เช่น แอปพลิเคชัน › การเข้าถึง" className={field} />
+          <input id="category" name="category" defaultValue={val('category', p.initial?.category)} key={`c${state?.error}`} placeholder="เช่น แอปพลิเคชัน › การเข้าถึง" className={field} />
         </div>
-        <Select id="groupId" label={f.group} none={f.none} options={p.groups} value={p.initial?.groupId} />
-        <Select id="assigneeId" label={f.assignee} none={f.none} options={p.users} value={p.initial?.assigneeId} />
+        <Select id="groupId" label={f.group} none={f.none} options={p.groups} value={val('groupId', p.initial?.groupId)} k={state?.error} />
+        <Select id="assigneeId" label={f.assignee} none={f.none} options={p.users} value={val('assigneeId', p.initial?.assigneeId)} k={state?.error} />
       </div>
 
       <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
@@ -93,7 +95,7 @@ export function IncidentForm(p: IncidentFormProps) {
         <div className="grid max-h-56 grid-cols-1 gap-1 overflow-y-auto rounded-control border border-border p-2 md:grid-cols-2">
           {p.cis.map((c) => (
             <label key={c.id} className="flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md px-2 text-sm hover:bg-subtle">
-              <input type="checkbox" name="ciIds" value={c.id} defaultChecked={p.initial?.ciIds.includes(c.id)} className="h-4 w-4" />
+              <input type="checkbox" name="ciIds" value={c.id} defaultChecked={v ? [v.ciIds ?? []].flat().includes(c.id) : p.initial?.ciIds.includes(c.id)} key={`${c.id}${state?.error}`} className="h-4 w-4" />
               <span className="flex flex-col">
                 <span className="font-medium">{c.name}</span>
                 {c.sub && <span className="text-xs text-muted">{c.sub}</span>}
@@ -115,11 +117,11 @@ export function IncidentForm(p: IncidentFormProps) {
   );
 }
 
-function Select({ id, label: text, none, options, value }: { id: string; label: string; none: string; options: Opt[]; value?: string }) {
+function Select({ id, label: text, none, options, value, k }: { id: string; label: string; none: string; options: Opt[]; value?: string; k?: string }) {
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={id} className={label}>{text}</label>
-      <select id={id} name={id} defaultValue={value ?? ''} className={field}>
+      <select id={id} name={id} defaultValue={value ?? ''} key={`${id}${k}`} className={field}>
         <option value="">{none}</option>
         {options.map((o) => <option key={o.id} value={o.id}>{o.name}</option>)}
       </select>

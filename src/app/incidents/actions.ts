@@ -18,7 +18,19 @@ import {
 } from '@/lib/incidentService';
 import { db } from '@/lib/db';
 
-export type FormState = { error?: string } | undefined;
+export type FormValues = Record<string, string | string[]>;
+export type FormState = { error?: string; values?: FormValues } | undefined;
+
+/** คืนค่าที่ผู้ใช้กรอก — React 19 ล้างช่อง uncontrolled หลังส่งฟอร์ม จึงต้องส่งกลับไปเติมใหม่ */
+function valuesOf(fd: FormData): FormValues {
+  const out: FormValues = {};
+  for (const k of new Set(fd.keys())) {
+    if (k.startsWith('$ACTION')) continue;
+    const all = fd.getAll(k).map(String);
+    out[k] = all.length > 1 || k === 'ciIds' ? all : all[0];
+  }
+  return out;
+}
 
 const LEVELS = ['HIGH', 'MED', 'LOW'];
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
@@ -50,7 +62,7 @@ async function docNo(id: string) {
 
 export async function createIncidentAction(_: FormState, fd: FormData): Promise<FormState> {
   const input = parseInput(fd);
-  if ('error' in input) return input;
+  if ('error' in input) return { ...input, values: valuesOf(fd) };
   const user = await getCurrentUser();
   const inc = await createIncident(input, user?.id ?? null);
   revalidatePath('/', 'layout');
@@ -59,12 +71,12 @@ export async function createIncidentAction(_: FormState, fd: FormData): Promise<
 
 export async function updateIncidentAction(id: string, _: FormState, fd: FormData): Promise<FormState> {
   const input = parseInput(fd);
-  if ('error' in input) return input;
+  if ('error' in input) return { ...input, values: valuesOf(fd) };
   const user = await getCurrentUser();
   try {
     await updateIncident(id, input, user?.id ?? null);
   } catch (e) {
-    if (e instanceof IncidentError) return { error: e.message };
+    if (e instanceof IncidentError) return { error: e.message, values: valuesOf(fd) };
     throw e;
   }
   revalidatePath('/', 'layout');

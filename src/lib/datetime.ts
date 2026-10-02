@@ -37,3 +37,9 @@ export function startOfTodayBangkok(now = new Date()): Date {
 const dateLong = fmt({ day: 'numeric', month: 'short', year: 'numeric' });
 /** 2 ต.ค. 2569 14:58 น. */
 export const thDateTime = (d: Date) => `${dateLong.format(d)} ${thTime(d)} น.`;
+
+const dm = fmt({ day: '2-digit', month: '2-digit' });
+/** 02/10 03:00 (วัน/เดือน เวลา — ใช้ในตารางที่พื้นที่จำกัด) */
+export const thDayMonthTime = (d: Date) => `${dm.format(d)} ${thTime(d)}`;
+/** 18 ก.ย. 2569 */
+export const thDate = (d: Date) => dateLong.format(d);

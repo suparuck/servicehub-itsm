@@ -239,6 +239,7 @@ model ConfigurationItem {
   attributes       Json             @default("{}")
   lastDiscoveredAt DateTime?
   lastVerifiedAt   DateTime?
+  driftNote        String? // ข้อมูลไม่ตรงกับ Discovery (รอกระทบยอด)
   createdAt        DateTime         @default(now())
 
   outgoing  CIRelationship[] @relation("RelSource")
@@ -246,6 +247,7 @@ model ConfigurationItem {
   incidents IncidentCI[]
   changes   ChangeCI[]
   asset     Asset?
+  history   CIChangeLog[]
 
   @@index([ciClass])
   @@index([lifecycle])
@@ -263,12 +265,13 @@ model CIRelationship {
 }
 
 model Asset {
-  id          String            @id @default(cuid())
-  assetTag    String            @unique
-  ciId        String            @unique
-  ci          ConfigurationItem @relation(fields: [ciId], references: [id], onDelete: Cascade)
-  vendor      String?
-  purchasedAt DateTime?
+  id           String            @id @default(cuid())
+  assetTag     String            @unique
+  ciId         String            @unique
+  ci           ConfigurationItem @relation(fields: [ciId], references: [id], onDelete: Cascade)
+  vendor       String?
+  purchasedAt  DateTime?
+  supportUntil DateTime? // สัญญา MA/ประกัน
 }
 
 model Incident {
@@ -468,4 +471,16 @@ model DashboardSnapshot {
   key       String   @id
   data      Json
   updatedAt DateTime @updatedAt
+}
+
+// ประวัติการเปลี่ยนแปลงคอนฟิกูเรชันของ CI
+model CIChangeLog {
+  id     String            @id @default(cuid())
+  ciId   String
+  ci     ConfigurationItem @relation(fields: [ciId], references: [id], onDelete: Cascade)
+  at     DateTime          @default(now())
+  what   String
+  source String // เช่น CHG-3381 / Discovery / แก้ไขโดย สมชาย ก.
+
+  @@index([ciId, at])
 }

@@ -31,6 +31,8 @@ const config: Config = {
         shell: '256px minmax(0,1fr)',
         trow: '104px minmax(0,2.4fr) minmax(0,1fr) 108px 120px 132px',
         'trow-s': '96px minmax(0,1fr) 96px',
+        ci: '96px minmax(0,1.6fr) minmax(0,1fr) 90px 120px minmax(0,1fr) 92px',
+        'ci-s': '90px minmax(0,1fr) 110px',
       },
       screens: { xs: '560px', md: '860px', lg: '1180px' },
     },

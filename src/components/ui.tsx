@@ -119,14 +119,14 @@ export function KpiTile({
   value: string;
   note: string;
   good: Good;
-  practice: string;
+  practice?: string;
 }) {
   return (
     <div className="flex flex-col gap-1.5 rounded-card border border-border bg-surface p-4">
       <span className="text-[13px] text-muted">{label}</span>
       <span className="font-mono text-[30px] font-bold leading-[1.1] tracking-[-0.02em]">{value}</span>
       <span className={cx('text-xs font-semibold', good ? 'text-ok' : 'text-warn-text')}>{note}</span>
-      <span className="text-[11px] text-muted">{practice}</span>
+      {practice && <span className="text-[11px] text-muted">{practice}</span>}
     </div>
   );
 }

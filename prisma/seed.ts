@@ -84,10 +84,10 @@ async function main() {
 
   // ── CMDB (design/CMDB.dc.html) ──────────────────────────────────
   const ciDefs: any[] = [
-    { ciId: 'CI-SVC-0003', name: 'ERP Production', subtitle: '340 ผู้ใช้ · SLA 99.5%', ciClass: 'BUSINESS_SERVICE', classLabel: 'Business Service', ownerLabel: 'ฝ่ายบัญชีและการเงิน', lifecycle: 'LIVE' },
-    { ciId: 'CI-SVC-0007', name: 'รายงานผู้บริหาร (BI)', subtitle: 'อ่านข้อมูลจาก ERP', ciClass: 'BUSINESS_SERVICE', classLabel: 'Business Service', ownerLabel: 'Data Platform', lifecycle: 'LIVE' },
+    { ciId: 'CI-SVC-0003', name: 'ERP Production', subtitle: '340 ผู้ใช้ · SLA 99.5%', ciClass: 'BUSINESS_SERVICE', classLabel: 'Business Service', ownerLabel: 'ฝ่ายบัญชีและการเงิน', lifecycle: 'LIVE', attributes: { userCount: 340, slaTarget: '99.5%' } },
+    { ciId: 'CI-SVC-0007', name: 'รายงานผู้บริหาร (BI)', subtitle: 'อ่านข้อมูลจาก ERP', ciClass: 'BUSINESS_SERVICE', classLabel: 'Business Service', ownerLabel: 'Data Platform', lifecycle: 'LIVE', attributes: { userCount: 120, slaTarget: '99.0%' } },
     { ciId: 'CI-APP-0041', name: 'ERP-APP-01', subtitle: 'App Server · Linux', ciClass: 'APPLICATION', classLabel: 'Application Server', ownerGroup: 'Application Support', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
-    { ciId: 'CI-APP-0042', name: 'ERP-APP-02', subtitle: 'App Server · Linux', ciClass: 'APPLICATION', classLabel: 'Application Server', ownerGroup: 'Application Support', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
+    { ciId: 'CI-APP-0042', name: 'ERP-APP-02', subtitle: 'App Server · Linux', ciClass: 'APPLICATION', classLabel: 'Application Server', ownerGroup: 'Application Support', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60), driftNote: 'RAM ในทะเบียน 128 GB ต่างจากที่ Discovery พบ 96 GB' },
     {
       ciId: 'CI-DB-00217', name: 'ERP-DB-02', subtitle: 'Oracle 19c · RAC node 2', ciClass: 'DATABASE', classLabel: 'Database', ownerGroup: 'DBA Team', ownerUser: somchai, lifecycle: 'LIVE',
       discovered: minutesAgo(14 * 60), verified: new Date('2026-09-18T03:00:00+07:00'),
@@ -102,9 +102,23 @@ async function main() {
     { ciId: 'CI-NET-0388', name: 'FW-North-01', subtitle: 'Firewall · สาขาภาคเหนือ', ciClass: 'NETWORK_DEVICE', classLabel: 'Network Device', ownerGroup: 'Network Ops', lifecycle: 'MAINTENANCE', discovered: minutesAgo(14 * 60) },
     { ciId: 'CI-NET-0412', name: 'WAN-North-Link', subtitle: 'Network Link', ciClass: 'NETWORK_DEVICE', classLabel: 'Network Link', ownerGroup: 'Network Ops', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
     { ciId: 'CI-CLD-1120', name: 'hr-app-prod (AKS)', subtitle: 'Azure Kubernetes', ciClass: 'CLOUD_RESOURCE', classLabel: 'Cloud Resource', ownerGroup: 'HRIS Team', lifecycle: 'PLANNED', discovered: new Date('2026-10-01T22:00:00+07:00') },
-    { ciId: 'CI-SRV-0207', name: 'ERP-REPORT-OLD', subtitle: 'Server', ciClass: 'SERVER', classLabel: 'Server', ownerLabel: '— ไม่มีเจ้าของ', lifecycle: 'RETIRED', discovered: new Date('2026-06-14T03:00:00+07:00') },
+    { ciId: 'CI-SRV-0207', name: 'ERP-REPORT-OLD', subtitle: 'Server', ciClass: 'SERVER', classLabel: 'Server', lifecycle: 'RETIRED', discovered: new Date('2026-06-14T03:00:00+07:00') },
     { ciId: 'CI-SRV-0301', name: 'VMH-DC1-07', subtitle: 'ESXi Host · DC1', ciClass: 'SERVER', classLabel: 'ESXi Host', ownerGroup: 'Data Platform', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
     { ciId: 'CI-SAN-0012', name: 'SAN-DC1-A', subtitle: 'Storage · 42 TB', ciClass: 'SERVER', classLabel: 'Storage', ownerGroup: 'Data Platform', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
+    // Business Service ที่ยังไม่มี Service Model (6 รายการ — ตรงกับงาน data quality ในดีไซน์)
+    ...[
+      ['CI-SVC-0011', 'บริการอีเมลองค์กร', 'Messaging'], ['CI-SVC-0012', 'Remote Access / VPN', 'Network Ops'],
+      ['CI-SVC-0013', 'Microsoft 365', 'Messaging'], ['CI-SVC-0014', 'ระบบ HR', 'HRIS Team'],
+      ['CI-SVC-0015', 'เว็บไซต์ลูกค้า', 'Application Support'], ['CI-SVC-0016', 'บริการงานพิมพ์', 'Desktop Support'],
+    ].map(([ciId, name, g]) => ({ ciId, name, subtitle: 'ยังไม่มี Service Model', ciClass: 'BUSINESS_SERVICE', classLabel: 'Business Service', ownerGroup: g, lifecycle: 'LIVE' })),
+    { ciId: 'CI-APP-0050', name: 'M365 Tenant', subtitle: 'Microsoft 365 · SaaS', ciClass: 'APPLICATION', classLabel: 'SaaS Application', ownerGroup: 'Messaging', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
+    { ciId: 'CI-NET-0501', name: 'SW-DC1-CORE01', subtitle: 'Core Switch · DC1', ciClass: 'NETWORK_DEVICE', classLabel: 'Network Device', ownerGroup: 'Network Ops', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60), driftNote: 'เฟิร์มแวร์ในทะเบียน 9.3 ต่างจากที่ Discovery พบ 9.1' },
+    { ciId: 'CI-CLD-1121', name: 'azure-vnet-prod', subtitle: 'Azure Virtual Network', ciClass: 'CLOUD_RESOURCE', classLabel: 'Cloud Resource', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
+    { ciId: 'CI-EUD-1936', name: 'NB-FIN-0192', subtitle: 'โน้ตบุ๊ก · ฝ่ายการเงิน', ciClass: 'END_USER_DEVICE', classLabel: 'End-user Device', ownerGroup: 'Desktop Support', lifecycle: 'LIVE', discovered: minutesAgo(30 * 60) },
+    { ciId: 'CI-EUD-1937', name: 'PC-NORTH-021', subtitle: 'เดสก์ท็อป · สาขาภาคเหนือ', ciClass: 'END_USER_DEVICE', classLabel: 'End-user Device', ownerGroup: 'Desktop Support', lifecycle: 'MAINTENANCE', discovered: minutesAgo(30 * 60) },
+    { ciId: 'CI-EUD-1938', name: 'NB-HR-0044', subtitle: 'โน้ตบุ๊ก · ฝ่ายบุคคล', ciClass: 'END_USER_DEVICE', classLabel: 'End-user Device', lifecycle: 'LIVE', discovered: minutesAgo(120 * 24 * 60) },
+    { ciId: 'CI-LIC-0100', name: 'Oracle DB Enterprise License', subtitle: 'ไลเซนส์ 16 core', ciClass: 'SOFTWARE_LICENSE', classLabel: 'Software License', ownerGroup: 'DBA Team', lifecycle: 'LIVE', verified: new Date('2026-08-15T10:00:00+07:00') },
+    { ciId: 'CI-LIC-0101', name: 'Adobe Creative Cloud (50 seats)', subtitle: 'ไลเซนส์รายปี', ciClass: 'SOFTWARE_LICENSE', classLabel: 'Software License', ownerGroup: 'Desktop Support', lifecycle: 'LIVE', verified: new Date('2026-07-01T10:00:00+07:00') },
   ];
   const ci: Record<string, string> = {};
   for (const c of ciDefs) {
@@ -113,7 +127,7 @@ async function main() {
         data: {
           ciId: c.ciId, name: c.name, subtitle: c.subtitle, ciClass: c.ciClass, classLabel: c.classLabel, lifecycle: c.lifecycle,
           ownerLabel: c.ownerLabel, ownerGroupId: c.ownerGroup ? group[c.ownerGroup] : null, ownerUserId: c.ownerUser ?? null,
-          attributes: c.attributes ?? {}, lastDiscoveredAt: c.discovered ?? null, lastVerifiedAt: c.verified ?? null,
+          attributes: c.attributes ?? {}, lastDiscoveredAt: c.discovered ?? null, lastVerifiedAt: c.verified ?? null, driftNote: c.driftNote ?? null,
         },
       })
     ).id;
@@ -130,7 +144,16 @@ async function main() {
   await rel('ERP-DB-02', 'VMH-DC1-07', 'RUNS_ON');
   await rel('ERP-DB-02', 'SAN-DC1-A', 'DEPENDS_ON');
   await rel('ERP-APP-01', 'WAN-North-Link', 'CONNECTS_TO');
-  await prisma.asset.create({ data: { assetTag: 'ASSET-SRV-0891', ciId: ci['ERP-DB-02'], vendor: 'Oracle / Dell' } });
+  await prisma.asset.create({ data: { assetTag: 'ASSET-SRV-0891', ciId: ci['ERP-DB-02'], vendor: 'Oracle / Dell', supportUntil: new Date('2027-03-31T00:00:00+07:00') } });
+  const log = (name: string, daysAgo: number, what: string, source: string) =>
+    prisma.cIChangeLog.create({ data: { ciId: ci[name], at: new Date(now.getTime() - daysAgo * 86_400_000), what, source } });
+  await log('ERP-DB-02', 0, 'ปรับ processes 1500 → 2000 (รอ)', 'CHG-3381');
+  await log('ERP-DB-02', 18, 'เพิ่ม RAM 256 → 384 GB', 'CHG-3288 · Discovery ยืนยัน');
+  await log('ERP-DB-02', 254, 'อัปเดต Release Update 19.21', 'CHG-2950');
+  await log('ERP-DB-02', 331, 'เปลี่ยนเจ้าของ CI เป็น DBA Team', 'แก้ไขโดย สมชาย ก.');
+  await log('FW-North-01', 0, 'เปลี่ยนสถานะเป็นบำรุงรักษา', 'CHG-3376');
+  await rel('M365 Tenant', 'azure-vnet-prod', 'CONNECTS_TO');
+  await rel('VMH-DC1-07', 'SW-DC1-CORE01', 'CONNECTS_TO');
 
   // ── Problem / Knowledge ────────────────────────────────────────
   const prb412 = await prisma.problem.create({ data: { seq: 412, title: 'Connection pool ของ ERP เต็มช่วงปิดงวด', phase: 'CONTROL', workNote: 'มีวิธีแก้ชั่วคราว', workaround: 'รีสตาร์ท connection pool ของ ERP-DB-02 และจำกัดงานรายงานช่วงปิดงวด' } });

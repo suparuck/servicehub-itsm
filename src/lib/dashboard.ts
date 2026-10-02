@@ -16,7 +16,7 @@ type Snap = {
 
 export async function getDashboard(filter: QueueFilter, userId?: string) {
   const now = Date.now();
-  const [open, snapRow, changes, problems, services, improve] = await Promise.all([
+  const [open, snapRow, changes, problems, services, improve, ciCount] = await Promise.all([
     db.incident.findMany({
       where: { status: OPEN },
       include: { service: true, group: true, timers: { where: { metric: 'RESOLVE' } } },
@@ -35,6 +35,7 @@ export async function getDashboard(filter: QueueFilter, userId?: string) {
     }),
     db.service.findMany({ orderBy: { sortOrder: 'asc' }, take: 6 }),
     db.improvementItem.findMany({ orderBy: { sortOrder: 'asc' } }),
+    db.configurationItem.count({ where: { lifecycle: { not: 'RETIRED' } } }),
   ]);
   const snap = (snapRow?.data ?? {}) as Partial<Snap>;
 
@@ -81,6 +82,7 @@ export async function getDashboard(filter: QueueFilter, userId?: string) {
     services,
     improve,
     p1,
+    ciCount,
     snap,
   };
 }

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { th } from '@/i18n/th';
 
@@ -5,10 +6,13 @@ export function PageHeader({
   breadcrumb,
   title,
   initials,
+  custom,
 }: {
-  breadcrumb: string;
+  breadcrumb: ReactNode;
   title: string;
   initials: string;
+  /** แทนที่ช่องค้นหา/ปุ่มเริ่มต้นด้วยตัวควบคุมเฉพาะหน้า (เช่น CMDB) */
+  custom?: ReactNode;
 }) {
   return (
     <header className="flex flex-wrap items-center gap-4 border-b border-border bg-surface px-7 py-3.5">
@@ -16,6 +20,23 @@ export function PageHeader({
         <span className="text-xs text-muted">{breadcrumb}</span>
         <h1 className="m-0 text-[22px] font-bold">{title}</h1>
       </div>
+      {custom ? (
+        <>
+          {custom}
+          <div aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft font-bold text-accent-hover">
+            {initials}
+          </div>
+        </>
+      ) : (
+        <DefaultControls initials={initials} />
+      )}
+    </header>
+  );
+}
+
+function DefaultControls({ initials }: { initials: string }) {
+  return (
+    <>
       <label htmlFor="q" className="sr-only">
         {th.header.searchLabel}
       </label>
@@ -47,6 +68,6 @@ export function PageHeader({
       >
         {initials}
       </div>
-    </header>
+    </>
   );
 }
