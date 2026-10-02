@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth, entraEnabled } from '@/auth';
+import { isSessionStale } from '@/lib/currentUser';
 import { db } from '@/lib/db';
 import type { Role } from '@/lib/permissions';
 import { homeFor, safeCallback } from '@/lib/routeAccess';
@@ -13,17 +14,22 @@ const NOTICES: Record<string, string> = {
   inactive: 'บัญชีนี้ถูกปิดการใช้งาน กรุณาติดต่อผู้ดูแลระบบ',
   AccessDenied: 'ไม่พบบัญชีนี้ในระบบ ServiceHub กรุณาติดต่อผู้ดูแลระบบเพื่อขอสิทธิ์',
   CredentialsSignin: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง',
+  expired: 'รหัสผ่านของบัญชีนี้ถูกเปลี่ยนหรือรีเซ็ต กรุณาเข้าสู่ระบบใหม่',
+};
+const INFO: Record<string, string> = {
+  changed: 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่',
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ callbackUrl?: string; reason?: string; error?: string }> }) {
   const sp = await searchParams;
   const callbackUrl = safeCallback(sp.callbackUrl);
 
-  // ล็อกอินอยู่แล้วและบัญชียังใช้ได้ → ไปหน้าแรกตามบทบาท (ถ้าบัญชีถูกปิด ให้ค้างที่หน้านี้เพื่อเข้าด้วยบัญชีอื่น)
+  // ล็อกอินอยู่แล้วและบัญชียังใช้ได้ → ไปหน้าแรกตามบทบาท
+  // ถ้าบัญชีถูกปิด หรือ session เก่ากว่าการเปลี่ยน/รีเซ็ตรหัสผ่าน ต้องค้างที่หน้านี้ (ไม่งั้น redirect วนกับ getCurrentUser)
   const session = await auth();
   if (session?.user?.id) {
-    const u = await db.user.findUnique({ where: { id: session.user.id }, select: { active: true, role: true } });
-    if (u?.active) redirect(callbackUrl !== '/' ? callbackUrl : homeFor(u.role as Role));
+    const u = await db.user.findUnique({ where: { id: session.user.id }, select: { active: true, role: true, passwordChangedAt: true } });
+    if (u?.active && !isSessionStale(session.authAt, u.passwordChangedAt)) redirect(callbackUrl !== '/' ? callbackUrl : homeFor(u.role as Role));
   }
 
   return (
@@ -34,7 +40,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           <h1 className="m-0 text-[26px] font-bold">ServiceHub</h1>
           <p className="m-0 text-sm text-muted">เข้าสู่ระบบเพื่อใช้งานบริการ IT</p>
         </div>
-        <LoginForm callbackUrl={callbackUrl} notice={NOTICES[sp.reason ?? sp.error ?? '']} />
+        <LoginForm callbackUrl={callbackUrl} notice={NOTICES[sp.reason ?? sp.error ?? '']} info={INFO[sp.reason ?? '']} />
         {entraEnabled && (
           <form action={entraLoginAction} className="flex flex-col gap-2 border-t border-divider pt-5">
             <input type="hidden" name="callbackUrl" value={callbackUrl} />

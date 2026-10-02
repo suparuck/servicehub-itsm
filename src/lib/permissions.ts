@@ -14,7 +14,8 @@ export type Action =
   | 'request.approve'
   | 'request.fulfil'
   | 'incident.manage'
-  | 'cmdb.manage';
+  | 'cmdb.manage'
+  | 'user.manage';
 
 const RULES: Record<Action, Role[]> = {
   'problem.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'ADMIN'],
@@ -28,6 +29,7 @@ const RULES: Record<Action, Role[]> = {
   // เจ้าหน้าที่ทุกบทบาท (ไม่รวมผู้ใช้ปลายทาง) ทำงานกับ Incident ได้ — ผู้ใช้ปลายทางทำได้เฉพาะผ่านพอร์ทัลกับรายการของตนเอง
   'incident.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'CAB_MEMBER', 'CONFIG_MANAGER', 'ADMIN'],
   'cmdb.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CONFIG_MANAGER', 'ADMIN'],
+  'user.manage': ['ADMIN'], // จัดการบัญชีผู้ใช้/บทบาท/รีเซ็ตรหัสผ่าน
 };
 
 export function can(role: Role | null | undefined, action: Action): boolean {

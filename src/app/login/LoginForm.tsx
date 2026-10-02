@@ -5,12 +5,15 @@ import { loginAction } from './actions';
 
 const field = 'box-border min-h-12 w-full rounded-control border border-input bg-surface px-3.5 text-base';
 
-export function LoginForm({ callbackUrl, notice }: { callbackUrl: string; notice?: string }) {
+export function LoginForm({ callbackUrl, notice, info }: { callbackUrl: string; notice?: string; info?: string }) {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
   const message = state?.error ?? notice;
   return (
     <form action={formAction} className="flex flex-col gap-4" noValidate>
       <input type="hidden" name="callbackUrl" value={callbackUrl} />
+      {info && !message && (
+        <div role="status" className="rounded-control border border-ok bg-ok-tint px-3 py-2.5 text-sm text-ok-fg">{info}</div>
+      )}
       {message && (
         <div role="alert" className="rounded-control border border-critical-line bg-critical-soft px-3 py-2.5 text-sm text-critical-fg">
           {message}

@@ -6,7 +6,7 @@ import { th } from '@/i18n/th';
 import { NAV } from '@/lib/nav';
 import { cx } from './ui';
 
-export function Sidebar({ badges, footer }: { badges: Record<string, string>; footer?: React.ReactNode }) {
+export function Sidebar({ badges, footer, isAdmin = false }: { badges: Record<string, string>; footer?: React.ReactNode; isAdmin?: boolean }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/'));
 
@@ -30,7 +30,7 @@ export function Sidebar({ badges, footer }: { badges: Record<string, string>; fo
         </span>
       </Link>
 
-      {NAV.map((g) => (
+      {NAV.filter((g) => !g.adminOnly || isAdmin).map((g) => (
         <div key={g.group} className="flex flex-col gap-0.5">
           <div className="px-2.5 pb-1 text-[11px] font-semibold tracking-[0.06em] text-[#8C93A0]">{g.group}</div>
           {g.items.map((it) => {

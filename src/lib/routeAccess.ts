@@ -10,6 +10,8 @@ export const homeFor = (role: Role | undefined | null) => (role === 'END_USER' ?
 export function checkAccess(pathname: string, role: Role | undefined | null): Access {
   if (PUBLIC.some((p) => p.test(pathname))) return { allow: true };
   if (!role) return { allow: false, redirect: '/login' };
+  // หน้าบัญชีของตนเอง (เปลี่ยนรหัสผ่าน) — ทุกบทบาทที่ล็อกอินแล้ว
+  if (pathname === '/account' || pathname.startsWith('/account/')) return { allow: true };
   const isPortal = pathname === '/portal' || pathname.startsWith('/portal/');
   // พอร์ทัลเปิดให้ทุกบทบาทที่ล็อกอินแล้ว · หน้าเจ้าหน้าที่ปิดสำหรับผู้ใช้ปลายทาง
   if (!isPortal && role === 'END_USER') return { allow: false, redirect: '/portal' };

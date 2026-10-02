@@ -1,7 +1,7 @@
 import { th } from '@/i18n/th';
 
 export type NavItem = { id: string; label: string; href: string };
-export type NavGroup = { group: string; items: NavItem[] };
+export type NavGroup = { group: string; items: NavItem[]; adminOnly?: boolean };
 
 // จัดกลุ่มตาม Service Value Chain (ตามลำดับใน design/Main.dc.html)
 export const NAV: NavGroup[] = [
@@ -46,5 +46,8 @@ export const NAV: NavGroup[] = [
     ],
   },
 ];
+
+/** กลุ่มเมนูที่แสดงเฉพาะผู้ดูแลระบบ (ไม่เกี่ยวกับ Service Value Chain) */
+NAV.push({ group: 'ADMIN · ผู้ดูแลระบบ', adminOnly: true, items: [{ id: 'users', label: 'ผู้ใช้และสิทธิ์', href: '/admin/users' }] });
 
 export const flatNav = NAV.flatMap((g) => g.items);

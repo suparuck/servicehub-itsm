@@ -73,7 +73,10 @@ test.describe('จำกัดจำนวนครั้งที่ล็อ�
     for (let i = 0; i < 5; i++) {
       await page.getByLabel('อีเมล').fill(email);
       await page.getByLabel('รหัสผ่าน').fill(`ผิด${i}`);
-      await page.getByRole('button', { name: 'เข้าสู่ระบบ' }).click();
+      await Promise.all([
+        page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/login')),
+        page.getByRole('button', { name: 'เข้าสู่ระบบ' }).click(),
+      ]);
       await expect(alert(page)).toHaveText('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
       await expect(page.getByRole('button', { name: 'เข้าสู่ระบบ' })).toBeEnabled();
     }

@@ -23,7 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const badges = await getBadges();
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-shell">
-      <Sidebar badges={badges} footer={<AccountMenu name={user.name} role={user.role as Role} />} />
+      <Sidebar badges={badges} isAdmin={user.role === 'ADMIN'} footer={<AccountMenu name={user.name} role={user.role as Role} />} />
       <main className="flex min-w-0 flex-col">{children}</main>
     </div>
   );

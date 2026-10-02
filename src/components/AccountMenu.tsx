@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { signOutAction } from '@/app/login/actions';
 import { ROLE_LABEL, type Role } from '@/lib/permissions';
 
@@ -10,6 +11,9 @@ export function AccountMenu({ name, role, tone = 'dark' }: { name: string; role:
         <span className={dark ? 'text-sm font-semibold text-white' : 'text-sm font-semibold text-ink'}>{name}</span>
         <span className={dark ? 'text-xs text-[#9AA1AC]' : 'text-xs text-muted'}>{ROLE_LABEL[role]}</span>
       </div>
+      <Link href="/account" className={dark ? 'inline-flex min-h-11 items-center rounded-control px-1 text-xs text-[#D9DCE1] underline hover:text-white' : 'inline-flex min-h-11 items-center px-1 text-xs text-ink underline hover:text-accent'}>
+        บัญชีของฉัน
+      </Link>
       <form action={signOutAction}>
         <button
           type="submit"

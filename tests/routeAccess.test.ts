@@ -16,6 +16,12 @@ describe('checkAccess', () => {
     expect(checkAccess('/incidents/INC-1', 'END_USER')).toEqual({ allow: false, redirect: '/portal' });
     expect(checkAccess('/portalx', 'END_USER')).toEqual({ allow: false, redirect: '/portal' });
   });
+  it('หน้าบัญชีของตนเอง: ทุกบทบาทที่ล็อกอินแล้ว', () => {
+    expect(checkAccess('/account', 'END_USER')).toEqual({ allow: true });
+    expect(checkAccess('/account', 'AGENT')).toEqual({ allow: true });
+    expect(checkAccess('/account', null)).toEqual({ allow: false, redirect: '/login' });
+    expect(checkAccess('/accounting', 'END_USER')).toEqual({ allow: false, redirect: '/portal' });
+  });
   it('เจ้าหน้าที่เข้าได้ทั้งสองฝั่ง', () => {
     expect(checkAccess('/changes', 'AGENT')).toEqual({ allow: true });
     expect(checkAccess('/portal', 'ADMIN')).toEqual({ allow: true });

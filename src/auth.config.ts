@@ -21,12 +21,14 @@ export const authConfig = {
       if (user) {
         token.uid = user.id;
         token.role = user.role;
+        token.authAt = Math.floor(Date.now() / 1000);
       }
       return token;
     },
     session({ session, token }) {
       if (token.uid) session.user.id = token.uid as string;
       if (token.role) session.user.role = token.role as Role;
+      session.authAt = token.authAt as number | undefined;
       return session;
     },
   },
