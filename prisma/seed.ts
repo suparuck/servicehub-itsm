@@ -302,13 +302,63 @@ async function main() {
         data: {
           seq: startSeq + i, title, impact: 'MED', urgency: 'MED', priority: 'P3', status: 'CLOSED', lifecycleStep: 5,
           serviceId: svc[serviceCode], groupId: group[grp], problemId, createdAt: minutesAgo(60 * 24 * (3 + i)),
-          resolvedAt: minutesAgo(60 * 24 * (2 + i)), closedAt: minutesAgo(60 * 24 * (2 + i)),
+          resolvedAt: minutesAgo(60 * 24 * (3 + i) - 120), closedAt: minutesAgo(60 * 24 * (3 + i) - 120),
+          timers: { create: [{ metric: 'RESOLVE', targetMinutes: 600, startedAt: minutesAgo(60 * 24 * (3 + i)), dueAt: minutesAgo(60 * 24 * (3 + i) - 600), achievedAt: minutesAgo(60 * 24 * (3 + i) - 120), state: 'MET' }] },
         },
       });
     }
   };
   await closedBatch(14, 24600, 'VPN', 'Network Ops', 'VPN หลุดเมื่อสลับ Wi-Fi', prb409.id);
   await closedBatch(3, 24650, 'MAIL', 'Messaging', 'อีเมลค้างคิว SMTP relay', prb401.id);
+
+  // ── ประวัติ Incident ที่ปิดแล้ว 30 วันล่าสุด (ข้อมูลรายงาน SLA) ─────────────
+  // สัดส่วนบรรลุ SLA ต่อบริการออกแบบให้ตรงกับดีไซน์: ERP 91.4 · VPN 94.2 · อีเมล 97.8 · M365 99.1 · HR 98.5
+  // (VPN/อีเมลรวมกับ Incident ที่ปิดแล้วข้างต้น 14/3 รายการซึ่งบรรลุทั้งหมด)
+  const rng = (() => {
+    let a = 20261002;
+    return () => {
+      a |= 0; a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  })();
+  const PRIO: { p: Priority; w: number; impact: Level; urgency: Level; resp: number; lo: number; hi: number }[] = [
+    { p: 'P1', w: 0.05, impact: 'HIGH', urgency: 'HIGH', resp: 15, lo: 0.25, hi: 0.95 },
+    { p: 'P2', w: 0.2, impact: 'HIGH', urgency: 'MED', resp: 30, lo: 0.2, hi: 0.8 },
+    { p: 'P3', w: 0.5, impact: 'MED', urgency: 'MED', resp: 120, lo: 0.1, hi: 0.4 },
+    { p: 'P4', w: 0.25, impact: 'LOW', urgency: 'LOW', resp: 480, lo: 0.03, hi: 0.18 },
+  ];
+  const pickPrio = () => { let x = rng(); for (const q of PRIO) { if ((x -= q.w) < 0) return q; } return PRIO[2]; };
+  const hist = [
+    { code: 'ERP', n: 35, met: 32, grp: 'Application Support' }, { code: 'VPN', n: 38, met: 35, grp: 'Network Ops' },
+    { code: 'MAIL', n: 43, met: 42, grp: 'Messaging' }, { code: 'M365', n: 117, met: 116, grp: 'Messaging' }, { code: 'HR', n: 67, met: 66, grp: 'HRIS Team' },
+  ];
+  const hIncidents: any[] = [];
+  const hTimers: any[] = [];
+  let hs = 20000;
+  for (const h of hist) {
+    const breached = new Set(Array.from({ length: h.n - h.met }, (_, k) => Math.floor(((k + 0.5) * h.n) / (h.n - h.met))));
+    for (let i = 0; i < h.n; i++) {
+      const q = pickPrio();
+      const target = TARGET[q.p];
+      const miss = breached.has(i);
+      const resolveMin = Math.round(miss ? target * (1.1 + rng() * 0.8) : target * (q.lo + rng() * (q.hi - q.lo)));
+      const created = new Date(now.getTime() - (rng() * 29 * 86_400_000 + resolveMin * 60_000));
+      const resolved = new Date(created.getTime() + resolveMin * 60_000);
+      const id = 'hist' + hs;
+      hIncidents.push({
+        id, seq: hs++, title: 'เหตุขัดข้องที่ปิดแล้ว · ' + h.code, impact: q.impact, urgency: q.urgency, priority: q.p, status: 'CLOSED', lifecycleStep: 5,
+        serviceId: svc[h.code], groupId: group[h.grp], createdAt: created, resolvedAt: resolved, closedAt: resolved,
+      });
+      hTimers.push({ incidentId: id, metric: 'RESOLVE', targetMinutes: target, startedAt: created, dueAt: new Date(created.getTime() + target * 60_000), achievedAt: resolved, state: miss ? 'BREACHED' : 'MET' });
+      const respMin = Math.round(q.resp * (rng() < 0.03 ? 1.4 : 0.2 + rng() * 0.7));
+      const respAt = new Date(created.getTime() + respMin * 60_000);
+      hTimers.push({ incidentId: id, metric: 'RESPONSE', targetMinutes: q.resp, startedAt: created, dueAt: new Date(created.getTime() + q.resp * 60_000), achievedAt: respAt, state: respMin <= q.resp ? 'MET' : 'BREACHED' });
+    }
+  }
+  await prisma.incident.createMany({ data: hIncidents });
+  await prisma.slaTimer.createMany({ data: hTimers });
 
   // ── รายละเอียด INC-24817 (design/Incident.dc.html) ─────────────
   if (major) {
@@ -355,9 +405,9 @@ async function main() {
   for (const [i, c] of cats.entries()) {
     cat.push((await prisma.catalogItem.create({ data: { name: c[0], items: c[1], slaText: c[2], serviceId: svc[c[3]], sortOrder: i } })).id);
   }
-  await prisma.serviceRequest.create({ data: { seq: 10291, title: 'ขอโน้ตบุ๊กใหม่ (เปลี่ยนเครื่องตามรอบ)', status: 'FULFILLING', stage: 3, nextNote: 'ส่ง → อนุมัติ → จัดเตรียม → ส่งมอบ · คาดว่าได้รับ 6 ต.ค.', catalogId: cat[0], requesterId: employee } });
+  await prisma.serviceRequest.create({ data: { seq: 10291, title: 'ขอโน้ตบุ๊กใหม่ (เปลี่ยนเครื่องตามรอบ)', status: 'FULFILLING', stage: 3, approvals: { create: { approver: 'หัวหน้างานโดยตรง', decision: 'APPROVED', decidedAt: minutesAgo(60 * 24 * 2) } }, tasks: { create: [{ title: 'ตรวจสอบสต็อกและจัดสรรเครื่อง', done: true }, { title: 'ติดตั้งระบบปฏิบัติการและโปรแกรมมาตรฐาน', done: false }, { title: 'ส่งมอบเครื่องให้ผู้ขอ', done: false }] }, nextNote: 'ส่ง → อนุมัติ → จัดเตรียม → ส่งมอบ · คาดว่าได้รับ 6 ต.ค.', catalogId: cat[0], requesterId: employee } });
   await prisma.serviceRequest.create({ data: { seq: 10233, title: 'ติดตั้งโปรแกรม Adobe Acrobat', status: 'DELIVERED', stage: 4, catalogId: cat[2], requesterId: employee, createdAt: minutesAgo(60 * 24 * 4), deliveredAt: minutesAgo(60 * 24) } });
-  await prisma.serviceRequest.create({ data: { seq: 10288, title: 'ขอสิทธิ์โฟลเดอร์ฝ่ายการเงิน', status: 'PENDING_APPROVAL', stage: 1, nextNote: 'รอหัวหน้าฝ่ายการเงินอนุมัติ', catalogId: cat[2], requesterId: employee } });
+  await prisma.serviceRequest.create({ data: { seq: 10288, title: 'ขอสิทธิ์โฟลเดอร์ฝ่ายการเงิน', status: 'PENDING_APPROVAL', stage: 2, approvals: { create: { approver: 'หัวหน้าฝ่ายการเงิน' } }, nextNote: 'รอหัวหน้าฝ่ายการเงินอนุมัติ', catalogId: cat[2], requesterId: employee } });
 
   // ข้อความถึงผู้ใช้ใน INC-24811 (แสดงในพอร์ทัลเป็น “ทีม IT ขอข้อมูลเพิ่ม”)
   const outlook = await prisma.incident.findUnique({ where: { seq: 24811 } });

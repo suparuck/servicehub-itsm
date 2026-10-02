@@ -7,6 +7,7 @@ import { getDashboard, type QueueFilter } from '@/lib/dashboard';
 import { thDay, thMonthShort, thTime, thWindow, formatRemaining } from '@/lib/datetime';
 import { formatDocNo } from '@/lib/docno';
 import { calcPriority } from '@/lib/priority';
+import { SLA_TARGET_PCT, formatDuration, meetsTarget } from '@/lib/slaStats';
 
 export const dynamic = 'force-dynamic';
 
@@ -40,8 +41,8 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
   const kpis = [
     { label: 'Incident เปิดอยู่', value: String(d.counts.all), note: `▲ P1 จำนวน ${d.p1} รายการ`, good: false, practice: 'Incident Management' },
     snap.kpis && { label: 'คำขอบริการรอดำเนินการ', ...snap.kpis.requests, practice: 'Service Request' },
-    snap.kpis && { label: 'MTTR เฉลี่ย', ...snap.kpis.mttr, practice: 'Incident Management' },
-    snap.kpis && { label: 'บรรลุ SLA', ...snap.kpis.sla, practice: 'Service Level Mgmt' },
+    (d.sla.mttrMin !== null ? { label: 'MTTR เฉลี่ย', value: formatDuration(d.sla.mttrMin), note: `${d.sla.samples} รายการ · 30 วันล่าสุด`, good: true, practice: 'Incident Management' } : snap.kpis && { label: 'MTTR เฉลี่ย', ...snap.kpis.mttr, practice: 'Incident Management' }),
+    (d.sla.resolvePct !== null ? { label: 'บรรลุ SLA', value: `${d.sla.resolvePct}%`, note: `เป้าหมาย ${SLA_TARGET_PCT}%`, good: meetsTarget(d.sla.resolvePct), practice: 'Service Level Mgmt' } : snap.kpis && { label: 'บรรลุ SLA', ...snap.kpis.sla, practice: 'Service Level Mgmt' }),
     snap.kpis && { label: 'Change สำเร็จ', ...snap.kpis.changeSuccess, practice: 'Change Enablement' },
     snap.kpis && { label: 'ความพึงพอใจ (CSAT)', ...snap.kpis.csat, practice: 'Service Desk' },
   ].filter((k): k is NonNullable<typeof k> => !!k);
@@ -217,7 +218,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
 
             <Card>
               <CardTitle sub={t.slaSub}>{t.slaTitle}</CardTitle>
-              {(snap.slaByService ?? []).map((s) => (
+              {(d.sla.rows.length ? d.sla.rows.map((r) => ({ name: r.group, pct: r.pct as number })) : (snap.slaByService ?? [])).map((s) => (
                 <div key={s.name} className="flex flex-col gap-1">
                   <div className="flex justify-between text-[13px]">
                     <span>{s.name}</span>

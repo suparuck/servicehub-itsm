@@ -31,4 +31,17 @@ docker compose up --build
 | `docker compose exec web npx vitest run` | รัน unit test |
 | `docker compose down -v` | หยุดและลบข้อมูลฐานข้อมูล |
 
-ความคืบหน้า: เฟส 1–6 เสร็จ (scaffold, schema + seed, แดชบอร์ด `/`, Incident: รายการ รายละเอียด สร้าง/แก้ไข SLA timer work notes, CMDB: รายการ รายละเอียด CI แผนผังความสัมพันธ์ impact analysis data quality, Portal: ค้นหา แคตตาล็อก แจ้งปัญหา/ขอบริการ ติดตามรายการ CSAT) — หน้าอื่นยังเป็น placeholder
+ความคืบหน้า: เฟส 1–7 เสร็จ — แดชบอร์ด, Incident, CMDB, Portal, Problem, Change (ปฏิทิน + CAB/ECAB), Knowledge, SLA reports และคิว Service Request
+
+## ผู้ใช้ตัวอย่างและสิทธิ์ (ยังไม่มี Auth)
+เมนูล่างสุดของ sidebar มีตัวสลับผู้ใช้เจ้าหน้าที่ (คุกกี้ `demo_user`) ใช้ทดสอบสิทธิ์ตามบทบาท — ปิดได้ด้วย `DEMO_USER_SWITCH=off`
+
+| ผู้ใช้ | บทบาท | ทำอะไรได้เพิ่ม |
+|---|---|---|
+| somsak@ | AGENT | จัดการ Problem/Incident/KB (ร่าง), สร้าง Change, จัดเตรียมคำขอ |
+| wanna@ | RESOLVER_GROUP_LEAD | + เผยแพร่ KB, อนุมัติคำขอ, ดำเนินการ Change |
+| change@ | CHANGE_MANAGER | + จัดตาราง/ดำเนินการ/ปิด Change |
+| cab@, cab2@, cab3@ | CAB_MEMBER | อนุมัติ/ไม่อนุมัติ Change ที่ส่งเข้า CAB/ECAB |
+| admin@ | ADMIN | ทุกอย่าง |
+
+ผู้ใช้ปลายทางพอร์ทัลคือ `employee@servicehub.local` (ไม่อยู่ในตัวสลับ) — โดเมนอีเมลทั้งหมด `@servicehub.local`

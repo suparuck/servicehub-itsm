@@ -116,7 +116,7 @@ export async function submitRequest(userId: string, input: { catalogId: string; 
   const item = await db.catalogItem.findUnique({ where: { id: input.catalogId } });
   if (!item) throw new PortalError('กรุณาเลือกประเภทบริการ');
   const data: Prisma.ServiceRequestCreateInput = {
-    title, description: input.description.trim() || null, status: 'PENDING_APPROVAL', stage: 1,
+    title, description: input.description.trim() || null, status: 'PENDING_APPROVAL', stage: 2,
     nextNote: 'ส่ง → อนุมัติ → จัดเตรียม → ส่งมอบ · รอหัวหน้างานอนุมัติ',
     catalog: { connect: { id: item.id } }, requester: { connect: { id: userId } },
     approvals: { create: { approver: 'หัวหน้างานโดยตรง' } },

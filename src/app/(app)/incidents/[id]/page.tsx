@@ -277,7 +277,7 @@ export default async function IncidentDetail({
               <h2 className="m-0 text-base font-semibold text-accent-hover">{t.kbTitle}</h2>
               {kb.length === 0 && <p className="m-0 text-sm text-accent-hover">{t.kbNone}</p>}
               {kb.map((a) => (
-                <Link key={a.id} href="/knowledge" className="inline-flex min-h-[44px] items-center text-sm">
+                <Link key={a.id} href={`/knowledge/${formatDocNo('KB', a.seq)}`} className="inline-flex min-h-[44px] items-center text-sm">
                   {formatDocNo('KB', a.seq)} · {a.title}
                 </Link>
               ))}

@@ -81,7 +81,7 @@ export default async function ChangeDetail({ params, searchParams }: { params: P
             ].map(([k, v]) => (
               <div key={k} className="flex flex-col gap-0.5 rounded-control bg-subtle px-3 py-2.5">
                 <dt className="text-xs text-muted">{k}</dt>
-                <dd className="m-0 text-sm font-semibold">{k === t.problem && change.problem ? <Link href={`/problems/${formatDocNo('PRB', change.problem.seq)}`}>{v}</Link> : v}</dd>
+                <dd className="m-0 text-sm font-semibold">{k === t.problem && change.problem ? <Link href={`/problems/${formatDocNo('PRB', change.problem.seq)}`} className="inline-flex min-h-[44px] items-center">{v}</Link> : v}</dd>
               </div>
             ))}
           </dl>

@@ -2,6 +2,7 @@ import type { Priority } from '@prisma/client';
 import { db } from './db';
 import { startOfTodayBangkok } from './datetime';
 import { LEVELS, type Level } from './priority';
+import { getSlaReport } from './slaReport';
 
 export type QueueFilter = 'all' | 'mine' | 'near';
 const NEAR_SLA_PCT = 25; // เหลือเวลา ≤ 25% ของเป้าหมาย ถือว่าใกล้ผิด SLA
@@ -16,7 +17,7 @@ type Snap = {
 
 export async function getDashboard(filter: QueueFilter, userId?: string) {
   const now = Date.now();
-  const [open, snapRow, changes, problems, services, improve, ciCount] = await Promise.all([
+  const [open, snapRow, changes, problems, services, improve, ciCount, sla, allServices] = await Promise.all([
     db.incident.findMany({
       where: { status: OPEN },
       include: { service: true, group: true, timers: { where: { metric: 'RESOLVE' } } },
@@ -36,6 +37,8 @@ export async function getDashboard(filter: QueueFilter, userId?: string) {
     db.service.findMany({ orderBy: { sortOrder: 'asc' }, take: 6 }),
     db.improvementItem.findMany({ orderBy: { sortOrder: 'asc' } }),
     db.configurationItem.count({ where: { lifecycle: { not: 'RETIRED' } } }),
+    getSlaReport(30),
+    db.service.findMany({ orderBy: { sortOrder: 'asc' }, select: { name: true } }),
   ]);
   const snap = (snapRow?.data ?? {}) as Partial<Snap>;
 
@@ -83,6 +86,13 @@ export async function getDashboard(filter: QueueFilter, userId?: string) {
     improve,
     p1,
     ciCount,
+    // SLA/MTTR จากข้อมูลจริง 30 วันล่าสุด (เรียงตามลำดับบริการในแคตตาล็อก ตัดบริการที่ไม่มีข้อมูล)
+    sla: {
+      resolvePct: sla.resolve.pct,
+      samples: sla.resolve.total,
+      mttrMin: sla.mttrMin,
+      rows: allServices.map((sv) => sla.byService.find((g) => g.group === sv.name)).filter((g): g is NonNullable<typeof g> => !!g && g.pct !== null).slice(0, 5),
+    },
     snap,
   };
 }
