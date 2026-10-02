@@ -43,3 +43,12 @@ const dm = fmt({ day: '2-digit', month: '2-digit' });
 export const thDayMonthTime = (d: Date) => `${dm.format(d)} ${thTime(d)}`;
 /** 18 ก.ย. 2569 */
 export const thDate = (d: Date) => dateLong.format(d);
+
+/** ค่าสำหรับ <input type="datetime-local"> เป็นเวลาไทย (YYYY-MM-DDTHH:mm) */
+export const toBangkokInput = (d: Date) => new Date(d.getTime() + 7 * 3_600_000).toISOString().slice(0, 16);
+/** แปลงค่าจาก datetime-local (ถือเป็นเวลาไทย) เป็น UTC Date — ค่าว่างหรือผิดรูปแบบคืน null */
+export function fromBangkokInput(v: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return null;
+  const d = new Date(`${v}:00+07:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}

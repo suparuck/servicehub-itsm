@@ -46,7 +46,9 @@ async function main() {
   const thanaphon = await mkUser('thanaphon@servicehub.local', 'ธนพล ศรีสุข', 'ธศ', 'AGENT', 'Application Support');
   const wanna = await mkUser('wanna@servicehub.local', 'วรรณา ใจดี', 'วจ', 'RESOLVER_GROUP_LEAD', 'Application Support');
   const somchai = await mkUser('somchai@servicehub.local', 'สมชาย ก.', 'สก', 'CONFIG_MANAGER', 'DBA Team');
-  await mkUser('cab@servicehub.local', 'ประเสริฐ ตรีรัตน์', 'ปต', 'CAB_MEMBER');
+  const cab1 = await mkUser('cab@servicehub.local', 'ประเสริฐ ตรีรัตน์', 'ปต', 'CAB_MEMBER');
+  const cab2 = await mkUser('cab2@servicehub.local', 'สุนีย์ อินทรวงศ์', 'สอ', 'CAB_MEMBER');
+  const cab3 = await mkUser('cab3@servicehub.local', 'ธีรพล ภักดี', 'ธภ', 'CAB_MEMBER');
   await mkUser('change@servicehub.local', 'กมลา วงศ์ไทย', 'กว', 'CHANGE_MANAGER');
   await mkUser('admin@servicehub.local', 'ผู้ดูแลระบบ', 'ผด', 'ADMIN');
   const employee = await mkUser('employee@servicehub.local', 'มณีรัตน์ กิจเจริญ', 'มก', 'END_USER');
@@ -191,13 +193,29 @@ async function main() {
     implementationPlan: 'แพตช์และปรับขนาด Connection pool ของ ERP-DB-02 (processes 1500 → 2000)', backoutPlan: 'คืนค่า parameter เดิมและรีสตาร์ท instance',
     cis: { create: [{ ciId: ci['ERP-DB-02'] }] },
   });
-  await mkChange(3376, 'อัปเกรดเฟิร์มแวร์ไฟร์วอลล์สาขา', 'NORMAL', 'MED', bkk(2, '01:00'), bkk(2, '03:00'), {
+  const chg3376 = await mkChange(3376, 'อัปเกรดเฟิร์มแวร์ไฟร์วอลล์สาขา', 'NORMAL', 'MED', bkk(2, '01:00'), bkk(2, '03:00'), {
     status: 'APPROVED', cabApproval: 'CAB', serviceId: svc.VPN, problemId: prb401.id, cis: { create: [{ ciId: ci['FW-North-01'] }] },
   });
   await mkChange(3370, 'เพิ่มผู้ใช้กลุ่มใหม่ใน M365', 'STANDARD', 'LOW', bkk(3, '10:00'), null, { status: 'SCHEDULED', serviceId: svc.M365 });
-  await mkChange(3365, 'ย้ายระบบ HR ขึ้นคลาวด์ (เฟส 2)', 'NORMAL', 'HIGH', bkk(7, '20:00'), bkk(8, '02:00'), {
+  const chg3365 = await mkChange(3365, 'ย้ายระบบ HR ขึ้นคลาวด์ (เฟส 2)', 'NORMAL', 'HIGH', bkk(7, '20:00'), bkk(8, '02:00'), {
     status: 'AWAITING_APPROVAL', cabApproval: 'CAB', serviceId: svc.HR, cis: { create: [{ ciId: ci['hr-app-prod (AKS)'] }] },
   });
+
+  // การอนุมัติของ CAB/ECAB ตามสถานะของแต่ละ Change
+  const approval = (changeId: string, board: string, approverId: string, decision: 'PENDING' | 'APPROVED' | 'REJECTED', comment?: string, minsAgo = 0) =>
+    prisma.changeApproval.create({ data: { changeId, board, approverId, decision, comment: comment ?? null, decidedAt: decision === 'PENDING' ? null : minutesAgo(minsAgo) } });
+  for (const a of [cab1, cab2, cab3]) await approval(chg3381.id, 'ECAB', a, 'PENDING');
+  await approval(chg3376.id, 'CAB', cab1, 'APPROVED', 'ผ่าน ช่วงเวลาเหมาะสม', 60 * 30);
+  await approval(chg3376.id, 'CAB', cab2, 'APPROVED', undefined, 60 * 28);
+  await approval(chg3376.id, 'CAB', cab3, 'APPROVED', 'โปรดแจ้งสาขาล่วงหน้า', 60 * 26);
+  await approval(chg3365.id, 'CAB', cab1, 'APPROVED', 'แผนถอยกลับชัดเจน', 60 * 5);
+  await approval(chg3365.id, 'CAB', cab2, 'PENDING');
+  await approval(chg3365.id, 'CAB', cab3, 'PENDING');
+  const aud = (id: string, text: string, minsAgo: number) => prisma.auditLog.create({ data: { entityType: 'CHANGE', entityId: id, text, at: minutesAgo(minsAgo) } });
+  await aud(chg3381.id, 'ส่งให้ ECAB พิจารณา (3 คน)', 40);
+  await aud(chg3376.id, 'ส่งให้ CAB พิจารณา (3 คน)', 60 * 32);
+  await aud(chg3376.id, 'ผ่านการอนุมัติ', 60 * 26);
+  await aud(chg3365.id, 'ส่งให้ CAB พิจารณา (3 คน)', 60 * 6);
 
   // ── Incident ───────────────────────────────────────────────────
   type Inc = {
