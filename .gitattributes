@@ -1,0 +1,3 @@
+# สคริปต์ shell ต้องเป็น LF เสมอ (CRLF ทำให้ bash บน CI พัง)
+*.sh text eol=lf
+.github/workflows/*.yml text eol=lf
