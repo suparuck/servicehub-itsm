@@ -17,3 +17,18 @@ scaffold โปรเจกต์ Next.js + TypeScript + Tailwind + Prisma, ต�
 ## สิ่งที่อยู่ในแพ็กเกจ
 - `CLAUDE.md` — บรีฟโปรเจกต์: stack, design tokens, โมเดลข้อมูล ITIL 4, ลำดับการพัฒนา
 - `design/` — ไฟล์ออกแบบต้นฉบับ 4 หน้า (แดชบอร์ด, Incident, พอร์ทัล, CMDB)
+
+## รันโปรเจกต์ด้วย Docker
+```bash
+docker compose up --build
+```
+เปิด http://localhost:3000 — คอนเทนเนอร์ `web` จะรัน `prisma migrate deploy` + seed จาก mock data แล้วเริ่ม `next dev`
+(Postgres 16 อยู่ที่พอร์ต 5432, ผู้ใช้/รหัส/ฐานข้อมูล `servicehub`)
+
+| คำสั่ง | ใช้ทำอะไร |
+|---|---|
+| `docker compose exec web npx prisma db seed` | seed ข้อมูลตัวอย่างใหม่ (ล้างข้อมูลเดิม) |
+| `docker compose exec web npx vitest run` | รัน unit test |
+| `docker compose down -v` | หยุดและลบข้อมูลฐานข้อมูล |
+
+ความคืบหน้า: เฟส 1–3 เสร็จ (scaffold, schema + seed, แดชบอร์ด `/`) — หน้าอื่นยังเป็น placeholder

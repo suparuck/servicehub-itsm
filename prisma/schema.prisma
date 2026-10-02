@@ -1,0 +1,471 @@
+// ServiceHub — โมเดลข้อมูลตามแนวปฏิบัติ ITIL 4
+// เลขที่เอกสาร (INC-#####, REQ-#####, ...) = sequence ใน DB (คอลัมน์ seq) จัดรูปแบบใน src/lib/docno.ts
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  END_USER
+  AGENT
+  RESOLVER_GROUP_LEAD
+  CHANGE_MANAGER
+  CAB_MEMBER
+  CONFIG_MANAGER
+  ADMIN
+}
+
+enum Level {
+  HIGH
+  MED
+  LOW
+}
+
+enum Priority {
+  P1
+  P2
+  P3
+  P4
+}
+
+enum IncidentStatus {
+  NEW
+  ASSIGNED
+  IN_PROGRESS
+  PENDING_USER
+  PENDING_VENDOR
+  RESOLVED
+  CLOSED
+}
+
+enum ServiceHealth {
+  OK
+  DEGRADED
+  DOWN
+}
+
+enum CiClass {
+  BUSINESS_SERVICE
+  APPLICATION
+  SERVER
+  DATABASE
+  NETWORK_DEVICE
+  CLOUD_RESOURCE
+  END_USER_DEVICE
+  SOFTWARE_LICENSE
+}
+
+enum CiLifecycle {
+  PLANNED
+  LIVE
+  MAINTENANCE
+  RETIRED
+}
+
+enum RelationType {
+  DEPENDS_ON
+  RUNS_ON
+  CONNECTS_TO
+  HOSTS
+}
+
+enum RequestStatus {
+  SUBMITTED
+  PENDING_APPROVAL
+  FULFILLING
+  DELIVERED
+  REJECTED
+  CANCELLED
+}
+
+enum ProblemPhase {
+  IDENTIFICATION
+  CONTROL
+  ERROR_CONTROL
+  KNOWN_ERROR
+  RESOLVED
+}
+
+enum ChangeType {
+  STANDARD
+  NORMAL
+  EMERGENCY
+}
+
+enum ChangeStatus {
+  DRAFT
+  AWAITING_APPROVAL
+  APPROVED
+  SCHEDULED
+  IMPLEMENTING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum RiskLevel {
+  HIGH
+  MED
+  LOW
+}
+
+enum ArticleStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum NoteVisibility {
+  INTERNAL
+  CUSTOMER
+}
+
+enum SlaMetric {
+  RESPONSE
+  RESOLVE
+}
+
+enum SlaTimerState {
+  RUNNING
+  PAUSED
+  MET
+  BREACHED
+}
+
+model User {
+  id        String           @id @default(cuid())
+  email     String           @unique
+  name      String
+  initials  String
+  role      Role             @default(END_USER)
+  groupId   String?
+  group     AssignmentGroup? @relation(fields: [groupId], references: [id])
+  createdAt DateTime         @default(now())
+
+  assignedIncidents Incident[]          @relation("IncidentAssignee")
+  managedIncidents  Incident[]          @relation("IncidentManager")
+  reportedIncidents Incident[]          @relation("IncidentReporter")
+  requests          ServiceRequest[]
+  notes             WorkNote[]
+  ownedCis          ConfigurationItem[] @relation("CiOwnerUser")
+  surveys           SurveyResponse[]
+}
+
+model AssignmentGroup {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+
+  incidents Incident[]
+  cisOwned  ConfigurationItem[]
+}
+
+model Service {
+  id           String            @id @default(cuid())
+  code         String            @unique
+  name         String
+  fullName     String? // ชื่อเต็มที่ใช้ในคิว Incident เช่น "บริการ ERP"
+  category     String?
+  ownerName    String?
+  health       ServiceHealth     @default(OK)
+  sortOrder    Int               @default(0)
+  slaId        String?
+  sla          Sla?              @relation(fields: [slaId], references: [id])
+  offerings    ServiceOffering[]
+  incidents    Incident[]
+  changes      Change[]
+  catalogItems CatalogItem[]
+}
+
+model ServiceOffering {
+  id          String  @id @default(cuid())
+  serviceId   String
+  service     Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+}
+
+model Sla {
+  id       String      @id @default(cuid())
+  name     String
+  calendar String      @default("24x7")
+  targets  SlaTarget[]
+  services Service[]
+}
+
+model SlaTarget {
+  id       String    @id @default(cuid())
+  slaId    String
+  sla      Sla       @relation(fields: [slaId], references: [id], onDelete: Cascade)
+  priority Priority
+  metric   SlaMetric
+  minutes  Int
+
+  @@unique([slaId, priority, metric])
+}
+
+model SlaTimer {
+  id            String        @id @default(cuid())
+  incidentId    String
+  incident      Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  metric        SlaMetric
+  startedAt     DateTime
+  dueAt         DateTime
+  targetMinutes Int
+  achievedAt    DateTime?
+  pausedAt      DateTime?
+  state         SlaTimerState @default(RUNNING)
+
+  @@unique([incidentId, metric])
+}
+
+model ConfigurationItem {
+  id               String           @id @default(cuid())
+  ciId             String           @unique
+  name             String
+  subtitle         String?
+  ciClass          CiClass
+  classLabel       String?
+  environment      String           @default("Prod")
+  lifecycle        CiLifecycle      @default(LIVE)
+  ownerGroupId     String?
+  ownerGroup       AssignmentGroup? @relation(fields: [ownerGroupId], references: [id])
+  ownerUserId      String?
+  ownerUser        User?            @relation("CiOwnerUser", fields: [ownerUserId], references: [id])
+  ownerLabel       String?
+  attributes       Json             @default("{}")
+  lastDiscoveredAt DateTime?
+  lastVerifiedAt   DateTime?
+  createdAt        DateTime         @default(now())
+
+  outgoing  CIRelationship[] @relation("RelSource")
+  incoming  CIRelationship[] @relation("RelTarget")
+  incidents IncidentCI[]
+  changes   ChangeCI[]
+  asset     Asset?
+
+  @@index([ciClass])
+  @@index([lifecycle])
+}
+
+model CIRelationship {
+  id       String            @id @default(cuid())
+  sourceId String
+  source   ConfigurationItem @relation("RelSource", fields: [sourceId], references: [id], onDelete: Cascade)
+  targetId String
+  target   ConfigurationItem @relation("RelTarget", fields: [targetId], references: [id], onDelete: Cascade)
+  type     RelationType
+
+  @@unique([sourceId, targetId, type])
+}
+
+model Asset {
+  id          String            @id @default(cuid())
+  assetTag    String            @unique
+  ciId        String            @unique
+  ci          ConfigurationItem @relation(fields: [ciId], references: [id], onDelete: Cascade)
+  vendor      String?
+  purchasedAt DateTime?
+}
+
+model Incident {
+  id            String           @id @default(cuid())
+  seq           Int              @unique @default(autoincrement()) // INC-#####
+  title         String
+  description   String?
+  impact        Level
+  urgency       Level
+  priority      Priority
+  status        IncidentStatus   @default(NEW)
+  lifecycleStep Int              @default(1) // 1–5 บันทึก → จัดลำดับ → วินิจฉัย → แก้ไข → ปิด
+  category      String?
+  channel       String?
+  isMajor       Boolean          @default(false)
+  serviceId     String?
+  service       Service?         @relation(fields: [serviceId], references: [id])
+  groupId       String?
+  group         AssignmentGroup? @relation(fields: [groupId], references: [id])
+  assigneeId    String?
+  assignee      User?            @relation("IncidentAssignee", fields: [assigneeId], references: [id])
+  managerId     String?
+  manager       User?            @relation("IncidentManager", fields: [managerId], references: [id])
+  reporterId    String?
+  reporter      User?            @relation("IncidentReporter", fields: [reporterId], references: [id])
+  parentId      String?
+  parent        Incident?        @relation("IncidentTree", fields: [parentId], references: [id])
+  children      Incident[]       @relation("IncidentTree")
+  problemId     String?
+  problem       Problem?         @relation(fields: [problemId], references: [id])
+  changeId      String?
+  change        Change?          @relation(fields: [changeId], references: [id])
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  resolvedAt    DateTime?
+  closedAt      DateTime?
+
+  cis    IncidentCI[]
+  notes  WorkNote[]
+  timers SlaTimer[]
+  survey SurveyResponse?
+
+  @@index([status, priority])
+  @@index([serviceId])
+}
+
+model IncidentCI {
+  incidentId String
+  incident   Incident          @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  ciId       String
+  ci         ConfigurationItem @relation(fields: [ciId], references: [id], onDelete: Cascade)
+  role       String? // ได้รับผลกระทบ / ต้นเหตุที่เป็นไปได้ / ...
+
+  @@id([incidentId, ciId])
+}
+
+model WorkNote {
+  id          String         @id @default(cuid())
+  incidentId  String
+  incident    Incident       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  authorId    String?
+  author      User?          @relation(fields: [authorId], references: [id])
+  authorLabel String?
+  kind        String // การวินิจฉัย / สื่อสารผู้ใช้ / ยกระดับ / จัดประเภท / Event
+  tone        String         @default("neutral") // accent | ok | critical | ink | muted
+  visibility  NoteVisibility @default(INTERNAL)
+  body        String
+  createdAt   DateTime       @default(now())
+
+  @@index([incidentId, createdAt])
+}
+
+model CatalogItem {
+  id        String           @id @default(cuid())
+  name      String
+  items     String
+  slaText   String
+  serviceId String?
+  service   Service?         @relation(fields: [serviceId], references: [id])
+  sortOrder Int              @default(0)
+  requests  ServiceRequest[]
+}
+
+model ServiceRequest {
+  id          String           @id @default(cuid())
+  seq         Int              @unique @default(autoincrement()) // REQ-#####
+  title       String
+  status      RequestStatus    @default(SUBMITTED)
+  stage       Int              @default(1) // 1 ส่ง · 2 อนุมัติ · 3 จัดเตรียม · 4 ส่งมอบ
+  nextNote    String?
+  catalogId   String?
+  catalog     CatalogItem?     @relation(fields: [catalogId], references: [id])
+  requesterId String?
+  requester   User?            @relation(fields: [requesterId], references: [id])
+  createdAt   DateTime         @default(now())
+  approvals   ApprovalStep[]
+  tasks       FulfilmentTask[]
+}
+
+model ApprovalStep {
+  id        String         @id @default(cuid())
+  requestId String
+  request   ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  approver  String
+  decision  String? // APPROVED / REJECTED
+  decidedAt DateTime?
+}
+
+model FulfilmentTask {
+  id        String         @id @default(cuid())
+  requestId String
+  request   ServiceRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  title     String
+  done      Boolean        @default(false)
+}
+
+model Problem {
+  id         String             @id @default(cuid())
+  seq        Int                @unique @default(autoincrement()) // PRB-####
+  title      String
+  phase      ProblemPhase       @default(IDENTIFICATION)
+  phaseLabel String?
+  rootCause  String?
+  workaround String?
+  workNote   String? // ข้อความสรุปบนแดชบอร์ด
+  createdAt  DateTime           @default(now())
+  incidents  Incident[]
+  articles   KnowledgeArticle[]
+  changes    Change[]
+}
+
+model Change {
+  id                 String       @id @default(cuid())
+  seq                Int          @unique @default(autoincrement()) // CHG-####
+  title              String
+  type               ChangeType
+  risk               RiskLevel
+  status             ChangeStatus @default(DRAFT)
+  windowStart        DateTime
+  windowEnd          DateTime?
+  serviceId          String?
+  service            Service?     @relation(fields: [serviceId], references: [id])
+  problemId          String?
+  problem            Problem?     @relation(fields: [problemId], references: [id])
+  implementationPlan String?
+  backoutPlan        String?
+  outcome            String?
+  cabApproval        String? // CAB / ECAB
+  createdAt          DateTime     @default(now())
+  cis                ChangeCI[]
+  incidents          Incident[]
+
+  @@index([windowStart])
+}
+
+model ChangeCI {
+  changeId String
+  change   Change            @relation(fields: [changeId], references: [id], onDelete: Cascade)
+  ciId     String
+  ci       ConfigurationItem @relation(fields: [ciId], references: [id], onDelete: Cascade)
+
+  @@id([changeId, ciId])
+}
+
+model KnowledgeArticle {
+  id        String        @id @default(cuid())
+  seq       Int           @unique @default(autoincrement()) // KB-####
+  title     String
+  body      String?
+  status    ArticleStatus @default(PUBLISHED)
+  views     Int           @default(0)
+  problemId String?
+  problem   Problem?      @relation(fields: [problemId], references: [id])
+  createdAt DateTime      @default(now())
+}
+
+model ImprovementItem {
+  id        String @id @default(cuid())
+  title     String
+  step      Int // 1–7
+  sortOrder Int    @default(0)
+}
+
+model SurveyResponse {
+  id         String   @id @default(cuid())
+  incidentId String   @unique
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  score      Int // 1–5
+  comment    String?
+  createdAt  DateTime @default(now())
+}
+
+// ตัวเลขรวมที่ดีไซน์ระบุแต่ไม่มีรายการรองรับ (เช่น CSAT 812 แบบประเมิน, CI 3,912) ใช้จนกว่าจะมีข้อมูลจริง
+model DashboardSnapshot {
+  key       String   @id
+  data      Json
+  updatedAt DateTime @updatedAt
+}
