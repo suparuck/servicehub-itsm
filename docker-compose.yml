@@ -29,6 +29,11 @@ services:
       WATCHPACK_POLLING: "true"
       CHOKIDAR_USEPOLLING: "true"
       NEXT_TELEMETRY_DISABLED: "1"
+      # Auth.js — ค่าสำหรับพัฒนาเท่านั้น! production ต้องสร้างความลับเอง: openssl rand -base64 32
+      AUTH_SECRET: dev-only-secret-do-not-use-in-production-0123456789abcdef
+      AUTH_TRUST_HOST: "true"
+      # รหัสผ่านของบัญชีตัวอย่างที่ seed (ดู README)
+      SEED_PASSWORD: servicehub-demo
     ports:
       - "3000:3000"
     volumes:

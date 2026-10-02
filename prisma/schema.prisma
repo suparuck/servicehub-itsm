@@ -142,14 +142,17 @@ enum SlaTimerState {
 }
 
 model User {
-  id        String           @id @default(cuid())
-  email     String           @unique
-  name      String
-  initials  String
-  role      Role             @default(END_USER)
-  groupId   String?
-  group     AssignmentGroup? @relation(fields: [groupId], references: [id])
-  createdAt DateTime         @default(now())
+  id           String           @id @default(cuid())
+  email        String           @unique
+  name         String
+  initials     String
+  role         Role             @default(END_USER)
+  groupId      String?
+  group        AssignmentGroup? @relation(fields: [groupId], references: [id])
+  passwordHash String? // bcrypt — ว่างได้สำหรับผู้ใช้ที่ล็อกอินผ่าน Entra ID เท่านั้น
+  active       Boolean          @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime         @default(now())
 
   assignedIncidents Incident[]          @relation("IncidentAssignee")
   managedIncidents  Incident[]          @relation("IncidentManager")

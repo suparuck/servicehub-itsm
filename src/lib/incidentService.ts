@@ -1,11 +1,12 @@
 import type { Level, NoteVisibility, Prisma } from '@prisma/client';
 import { th } from '@/i18n/th';
 import { db } from './db';
+import { DomainError } from './errors';
 import { allowedTransitions, canTransition, lifecycleStep, type IncidentStatus } from './incident';
 import { calcPriority } from './priority';
 import { retarget, timerEffects } from './sla';
 
-export class IncidentError extends Error {}
+export class IncidentError extends DomainError {}
 
 export interface IncidentInput {
   title: string;

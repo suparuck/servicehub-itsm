@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { CiForm } from '@/components/CiForm';
 import { PageHeader } from '@/components/PageHeader';
 import { th } from '@/i18n/th';
+import { can, type Role } from '@/lib/permissions';
 import { formatAttributes } from '@/lib/cmdb';
 import { getOwnerOptions } from '@/lib/cmdbQueries';
 import { getCurrentUser } from '@/lib/currentUser';
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic';
 export default async function EditCiPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [user, opts, ci] = await Promise.all([getCurrentUser(), getOwnerOptions(), db.configurationItem.findUnique({ where: { ciId: id } })]);
-  if (!ci) notFound();
+  if (!ci || !can(user.role as Role, 'cmdb.manage')) notFound();
   return (
     <>
       <PageHeader breadcrumb={`${th.cmdb.breadcrumb} › ${ci.ciId}`} title={`${th.cmdb.form.editTitle} ${ci.name}`} initials={user?.initials ?? '··'} />

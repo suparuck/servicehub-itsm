@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { CiClass, CiLifecycle, RelationType } from '@prisma/client';
 import { getCurrentUser } from '@/lib/currentUser';
+import { isDomainError } from '@/lib/errors';
+import { assertCan, type Role } from '@/lib/permissions';
 import { CmdbError, addRelationship, createCi, removeRelationship, updateCi, verifyCi, type CiInput } from '@/lib/cmdbService';
 
 export type CiFormValues = Record<string, string>;
@@ -21,6 +23,13 @@ const LIFECYCLES = ['PLANNED', 'LIVE', 'MAINTENANCE', 'RETIRED'];
 const ENVS = ['Prod', 'UAT', 'Dev'];
 const REL_TYPES = ['DEPENDS_ON', 'RUNS_ON', 'CONNECTS_TO', 'HOSTS'];
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
+
+/** Server Action เรียกได้จากหน้าไหนก็ได้ด้วย action ID — ตรวจสิทธิ์ที่นี่ทุกครั้ง (ไม่พึ่งแค่การซ่อนปุ่ม) */
+async function cmdbUser() {
+  const user = await getCurrentUser();
+  assertCan(user.role as Role, 'cmdb.manage');
+  return user;
+}
 
 function parse(fd: FormData): CiInput | { error: string } {
   const name = str(fd, 'name');
@@ -40,20 +49,26 @@ function parse(fd: FormData): CiInput | { error: string } {
 export async function createCiAction(_: CiFormState, fd: FormData): Promise<CiFormState> {
   const input = parse(fd);
   if ('error' in input) return { ...input, values: valuesOf(fd) };
-  const user = await getCurrentUser();
-  const ci = await createCi(input, user?.id ?? null);
+  let ciId: string;
+  try {
+    const user = await cmdbUser();
+    ciId = (await createCi(input, user.id)).ciId;
+  } catch (e) {
+    if (isDomainError(e)) return { error: e.message, values: valuesOf(fd) };
+    throw e;
+  }
   revalidatePath('/cmdb', 'layout');
-  redirect(`/cmdb/${ci.ciId}`);
+  redirect(`/cmdb/${ciId}`);
 }
 
 export async function updateCiAction(ciId: string, _: CiFormState, fd: FormData): Promise<CiFormState> {
   const input = parse(fd);
   if ('error' in input) return { ...input, values: valuesOf(fd) };
-  const user = await getCurrentUser();
   try {
-    await updateCi(ciId, input, user?.id ?? null);
+    const user = await cmdbUser();
+    await updateCi(ciId, input, user.id);
   } catch (e) {
-    if (e instanceof CmdbError) return { error: e.message, values: valuesOf(fd) };
+    if (isDomainError(e)) return { error: e.message, values: valuesOf(fd) };
     throw e;
   }
   revalidatePath('/cmdb', 'layout');
@@ -61,12 +76,12 @@ export async function updateCiAction(ciId: string, _: CiFormState, fd: FormData)
 }
 
 async function run(ciId: string, fn: (userId: string | null) => Promise<unknown>): Promise<never> {
-  const user = await getCurrentUser();
   let error: string | null = null;
   try {
-    await fn(user?.id ?? null);
+    const user = await cmdbUser();
+    await fn(user.id);
   } catch (e) {
-    if (e instanceof CmdbError) error = e.message;
+    if (isDomainError(e)) error = e.message;
     else throw e;
   }
   revalidatePath('/cmdb', 'layout');

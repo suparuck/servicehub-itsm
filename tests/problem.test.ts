@@ -28,6 +28,16 @@ describe('problem transitions', () => {
 });
 
 describe('permissions', () => {
+  it('Incident: เจ้าหน้าที่ทุกบทบาททำได้ แต่ผู้ใช้ปลายทางไม่ได้', () => {
+    for (const r of ['AGENT', 'RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'CAB_MEMBER', 'CONFIG_MANAGER', 'ADMIN'] as const) expect(can(r, 'incident.manage')).toBe(true);
+    expect(can('END_USER', 'incident.manage')).toBe(false);
+  });
+  it('CMDB: แก้ไขได้เฉพาะ Agent/หัวหน้ากลุ่ม/Config Manager/Admin', () => {
+    expect(can('CONFIG_MANAGER', 'cmdb.manage')).toBe(true);
+    expect(can('CAB_MEMBER', 'cmdb.manage')).toBe(false);
+    expect(can('CHANGE_MANAGER', 'cmdb.manage')).toBe(false);
+    expect(can('END_USER', 'cmdb.manage')).toBe(false);
+  });
   it('เฉพาะ CAB/Change Manager/Admin อนุมัติ Change ได้', () => {
     expect(can('CAB_MEMBER', 'change.approve')).toBe(true);
     expect(can('AGENT', 'change.approve')).toBe(false);

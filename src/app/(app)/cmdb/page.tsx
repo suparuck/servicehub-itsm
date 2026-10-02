@@ -8,6 +8,7 @@ import { DQ_KEYS, getCmdbSummary, listCis, type DqKey } from '@/lib/cmdbQueries'
 import { getCurrentUser } from '@/lib/currentUser';
 import { thDayMonthTime } from '@/lib/datetime';
 import { formatDocNo } from '@/lib/docno';
+import { can, type Role } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 type SP = Record<string, string | string[] | undefined>;
@@ -119,9 +120,11 @@ export default async function CmdbPage({ searchParams }: { searchParams: Promise
               {submitted && env.map((e) => <input key={e} type="hidden" name="env" value={e} />)}
               {submitted && lifecycle.map((l) => <input key={l} type="hidden" name="lifecycle" value={l} />)}
             </form>
-            <Link href="/cmdb/new" className="inline-flex h-11 items-center rounded-control bg-accent px-[18px] text-sm font-semibold text-white no-underline hover:bg-accent-hover hover:text-white">
-              {t.addCi}
-            </Link>
+            {can(user?.role as Role, 'cmdb.manage') && (
+              <Link href="/cmdb/new" className="inline-flex h-11 items-center rounded-control bg-accent px-[18px] text-sm font-semibold text-white no-underline hover:bg-accent-hover hover:text-white">
+                {t.addCi}
+              </Link>
+            )}
           </>
         }
       />

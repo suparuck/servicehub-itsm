@@ -1,18 +1,16 @@
 import type { IncidentStatus, Prisma } from '@prisma/client';
 import { db } from './db';
+import { getCurrentUser } from './currentUser';
 import { incidentBars, parsePortalDocNo, searchTokens, type DocKind } from './portal';
 import { th } from '@/i18n/th';
 import { formatDocNo } from './docno';
 
-const DEMO_EMAIL = process.env.DEMO_PORTAL_USER_EMAIL ?? 'employee@servicehub.local';
 const DONE_REQ = ['DELIVERED', 'REJECTED', 'CANCELLED'] as const;
 
 export class PortalError extends Error {}
 
-// ยังไม่มี Auth — ใช้ผู้ใช้ปลายทางตัวอย่างจาก seed
-export async function getPortalUser() {
-  return db.user.findUnique({ where: { email: DEMO_EMAIL } });
-}
+/** ผู้ใช้ที่ล็อกอินอยู่ (พอร์ทัลใช้ตัวตนเดียวกับฝั่งเจ้าหน้าที่) */
+export const getPortalUser = getCurrentUser;
 
 export async function getOutage() {
   const svc = await db.service.findFirst({ where: { health: { in: ['DOWN', 'DEGRADED'] } }, orderBy: [{ health: 'desc' }, { sortOrder: 'asc' }] });

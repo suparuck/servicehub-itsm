@@ -31,17 +31,34 @@ docker compose up --build
 | `docker compose exec web npx vitest run` | รัน unit test |
 | `docker compose down -v` | หยุดและลบข้อมูลฐานข้อมูล |
 
-ความคืบหน้า: เฟส 1–7 เสร็จ — แดชบอร์ด, Incident, CMDB, Portal, Problem, Change (ปฏิทิน + CAB/ECAB), Knowledge, SLA reports และคิว Service Request
+ความคืบหน้า: เฟส 1–7 เสร็จ + Auth (Auth.js) + E2E (Playwright 93 เคส) — แดชบอร์ด, Incident, CMDB, Portal, Problem, Change (ปฏิทิน + CAB/ECAB), Knowledge, SLA reports และคิว Service Request
 
-## ผู้ใช้ตัวอย่างและสิทธิ์ (ยังไม่มี Auth)
-เมนูล่างสุดของ sidebar มีตัวสลับผู้ใช้เจ้าหน้าที่ (คุกกี้ `demo_user`) ใช้ทดสอบสิทธิ์ตามบทบาท — ปิดได้ด้วย `DEMO_USER_SWITCH=off`
+## การยืนยันตัวตน (Auth.js) และสิทธิ์
+- ทุกหน้าต้องล็อกอิน (middleware) — ไปที่ http://localhost:3000 แล้วระบบพาไป `/login`; ผู้ใช้ปลายทาง (`END_USER`) เข้าได้เฉพาะ `/portal`
+- Session เป็น JWT อายุ 8 ชม. · รหัสผ่านเก็บแบบ bcrypt · ผิดเกิน 5 ครั้ง/บัญชี (หรือ 30 ครั้ง/ไอพี) ล็อกชั่วคราว 15 นาที
+- สิทธิ์ตามบทบาทบังคับในฝั่ง service ทุกครั้งที่แก้ข้อมูล (`src/lib/permissions.ts`) — การซ่อนปุ่มใน UI เป็นแค่ความสะดวก
+- **Microsoft Entra ID (Azure AD)**: กำหนด `AUTH_MICROSOFT_ENTRA_ID_ID/SECRET/ISSUER` (ดู `.env.example`) จะมีปุ่ม "เข้าสู่ระบบด้วย Microsoft" — รับเฉพาะผู้ใช้ที่มีอยู่ในระบบแล้ว (จับคู่ด้วยอีเมล) ไม่สร้างบัญชีอัตโนมัติ
+- **production**: ต้องตั้ง `AUTH_SECRET` (`openssl rand -base64 32`) และ `SEED_PASSWORD` เอง; ค่าใน `docker-compose.yml` ใช้เพื่อพัฒนาเท่านั้น และการจำกัดการล็อกอินเก็บในหน่วยความจำของเซิร์ฟเวอร์เดียว (หลายเครื่องต้องย้ายไป Redis)
 
-| ผู้ใช้ | บทบาท | ทำอะไรได้เพิ่ม |
+### บัญชีตัวอย่าง (ใช้เพื่อพัฒนาเท่านั้น)
+รหัสผ่านทุกบัญชีคือค่า `SEED_PASSWORD` (ใน `docker-compose.yml` ตั้งไว้ `servicehub-demo`) · ลงชื่อเข้าใช้ที่ `/login` ด้วยอีเมลด้านล่าง
+
+| อีเมล | บทบาท | ทำอะไรได้เพิ่ม |
 |---|---|---|
-| somsak@ | AGENT | จัดการ Problem/Incident/KB (ร่าง), สร้าง Change, จัดเตรียมคำขอ |
-| wanna@ | RESOLVER_GROUP_LEAD | + เผยแพร่ KB, อนุมัติคำขอ, ดำเนินการ Change |
-| change@ | CHANGE_MANAGER | + จัดตาราง/ดำเนินการ/ปิด Change |
-| cab@, cab2@, cab3@ | CAB_MEMBER | อนุมัติ/ไม่อนุมัติ Change ที่ส่งเข้า CAB/ECAB |
-| admin@ | ADMIN | ทุกอย่าง |
+| somsak@servicehub.local | AGENT | จัดการ Problem/Incident/KB (ร่าง), สร้าง Change, จัดเตรียมคำขอ |
+| wanna@servicehub.local | RESOLVER_GROUP_LEAD | + เผยแพร่ KB, อนุมัติคำขอ, ดำเนินการ Change |
+| change@servicehub.local | CHANGE_MANAGER | + จัดตาราง/ดำเนินการ/ปิด Change |
+| cab@ / cab2@ / cab3@servicehub.local | CAB_MEMBER | อนุมัติ/ไม่อนุมัติ Change ที่ส่งเข้า CAB/ECAB |
+| admin@servicehub.local | ADMIN | ทุกอย่าง |
+| employee@servicehub.local | END_USER | พอร์ทัลผู้ใช้ (แจ้งปัญหา ขอบริการ ติดตาม ประเมิน) |
 
-ผู้ใช้ปลายทางพอร์ทัลคือ `employee@servicehub.local` (ไม่อยู่ในตัวสลับ) — โดเมนอีเมลทั้งหมด `@servicehub.local`
+## ทดสอบ
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `npm test` | unit test (Vitest) — logic ล้วน ไม่ต้องใช้ DB |
+| `npm run test:e2e` | E2E (Playwright) กับแอปที่รันอยู่ที่ localhost:3000 — **ล้างและ seed ฐานข้อมูลใหม่ก่อนรันทุกครั้ง** (ผ่าน `docker compose exec`) |
+| `E2E_RESET=0 npm run test:e2e` | รันโดยไม่ reset ฐานข้อมูล |
+| `E2E_BROWSER=chrome npm run test:e2e` | เลือกเบราว์เซอร์: `msedge` (ค่าเริ่มต้น) · `chrome` · `chromium` (ต้อง `npx playwright install chromium`) |
+| `npm run test:e2e:report` | เปิดรายงาน HTML ของการรันล่าสุด |
+
+ไฟล์ E2E เรียงตามเลขนำหน้า (`tests/e2e/01-…`) เพราะแชร์ฐานข้อมูลเดียวกันและมีการแก้ข้อมูลระหว่างทดสอบ

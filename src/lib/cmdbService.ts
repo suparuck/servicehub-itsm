@@ -3,8 +3,9 @@ import { db } from './db';
 import { diffFields, nextCiId, parseAttributes } from './cmdb';
 import { wouldCreateCycle, type Rel } from './cmdbGraph';
 import { th } from '@/i18n/th';
+import { DomainError } from './errors';
 
-export class CmdbError extends Error {}
+export class CmdbError extends DomainError {}
 
 export interface CiInput {
   name: string;

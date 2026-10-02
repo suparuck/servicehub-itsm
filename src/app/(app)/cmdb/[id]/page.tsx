@@ -8,6 +8,7 @@ import { getCiDetail, getOwnerOptions } from '@/lib/cmdbQueries';
 import { getCurrentUser } from '@/lib/currentUser';
 import { thDate, thDateShort, thDayMonthTime } from '@/lib/datetime';
 import { formatDocNo } from '@/lib/docno';
+import { can, type Role } from '@/lib/permissions';
 import { addRelationshipAction, removeRelationshipAction, verifyCiAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,7 @@ export default async function CiDetailPage({ params, searchParams }: { params: P
   const { ci, tiers, impact, openInc, problems, pendingChanges, kb } = detail;
   const t = th.cmdb;
   const hasP1 = openInc.some((i) => i.priority === 'P1');
+  const canEdit = can(user.role as Role, 'cmdb.manage');
 
   const owner = ci.ownerUser?.name ?? ci.ownerGroup?.name ?? ci.ownerLabel;
   const stored = (ci.attributes ?? {}) as Record<string, unknown>;
@@ -70,8 +72,8 @@ export default async function CiDetailPage({ params, searchParams }: { params: P
               {hasP1 ? <StatusBadge tone="critical" className="px-2.5 py-1 text-xs">{t.badgeP1}</StatusBadge> : openInc.length > 0 && <StatusBadge tone="warn" className="px-2.5 py-1 text-xs">{t.badgeIncident}</StatusBadge>}
               {pendingChanges.length > 0 && <StatusBadge tone="warn" className="px-2.5 py-1 text-xs">{t.badgeChange}</StatusBadge>}
               {ci.driftNote && <StatusBadge tone="warn" className="px-2.5 py-1 text-xs">{t.badgeDrift}</StatusBadge>}
-              <Link href={`/cmdb/${ci.ciId}/edit`} className={btn}>{t.edit}</Link>
-              <form action={verifyCiAction.bind(null, ci.ciId)}><button type="submit" className={btn}>{t.verify}</button></form>
+              {canEdit && <Link href={`/cmdb/${ci.ciId}/edit`} className={btn}>{t.edit}</Link>}
+              {canEdit && <form action={verifyCiAction.bind(null, ci.ciId)}><button type="submit" className={btn}>{t.verify}</button></form>}
             </div>
           </div>
           {ci.driftNote && <p className="m-0 rounded-control bg-warn-tint px-3 py-2 text-sm text-warn-fg">{ci.driftNote}</p>}
@@ -154,11 +156,14 @@ export default async function CiDetailPage({ params, searchParams }: { params: P
                 <span className="text-muted">{r.dir === 'out' ? t.relOut : t.relIn} · {t.relTypes[r.type]} · </span>
                 <Link href={`/cmdb/${r.other.ciId}`} className="inline-flex min-h-[44px] items-center font-medium">{r.other.name}</Link>
               </span>
-              <form action={removeRelationshipAction.bind(null, ci.ciId, r.id)}>
-                <button type="submit" aria-label={`${t.relRemove} ${r.other.name}`} className="h-11 rounded-control border border-input bg-surface px-4 text-sm text-critical-fg">{t.relRemove}</button>
-              </form>
+              {canEdit && (
+                <form action={removeRelationshipAction.bind(null, ci.ciId, r.id)}>
+                  <button type="submit" aria-label={`${t.relRemove} ${r.other.name}`} className="h-11 rounded-control border border-input bg-surface px-4 text-sm text-critical-fg">{t.relRemove}</button>
+                </form>
+              )}
             </div>
           ))}
+          {canEdit && (
           <form action={addRelationshipAction.bind(null, ci.ciId)} className="flex flex-wrap items-end gap-3 border-t border-divider pt-3">
             <label className="flex min-w-[200px] flex-1 flex-col gap-1 text-[13px] text-muted">{t.relType}
               <select name="type" className={cx(field)} defaultValue="DEPENDS_ON">
@@ -173,6 +178,7 @@ export default async function CiDetailPage({ params, searchParams }: { params: P
             </label>
             <button type="submit" className="h-11 rounded-control bg-ink px-5 text-sm font-semibold text-white">{t.relAdd}</button>
           </form>
+          )}
         </Card>
       </div>
     </>

@@ -12,7 +12,9 @@ export type Action =
   | 'kb.manage'
   | 'kb.publish'
   | 'request.approve'
-  | 'request.fulfil';
+  | 'request.fulfil'
+  | 'incident.manage'
+  | 'cmdb.manage';
 
 const RULES: Record<Action, Role[]> = {
   'problem.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'ADMIN'],
@@ -23,6 +25,9 @@ const RULES: Record<Action, Role[]> = {
   'kb.publish': ['RESOLVER_GROUP_LEAD', 'ADMIN'],
   'request.approve': ['RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'ADMIN'],
   'request.fulfil': ['AGENT', 'RESOLVER_GROUP_LEAD', 'ADMIN'],
+  // เจ้าหน้าที่ทุกบทบาท (ไม่รวมผู้ใช้ปลายทาง) ทำงานกับ Incident ได้ — ผู้ใช้ปลายทางทำได้เฉพาะผ่านพอร์ทัลกับรายการของตนเอง
+  'incident.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'CAB_MEMBER', 'CONFIG_MANAGER', 'ADMIN'],
+  'cmdb.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CONFIG_MANAGER', 'ADMIN'],
 };
 
 export function can(role: Role | null | undefined, action: Action): boolean {

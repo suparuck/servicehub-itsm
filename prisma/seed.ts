@@ -1,6 +1,7 @@
 // Seed จาก mock data ใน design/*.dc.html (Main, Incident, CMDB, Portal)
 // ข้อมูลที่เกี่ยวกับเวลา สร้างเทียบกับ "ตอนนี้" เพื่อให้ SLA/กำหนดการ Change ไม่ล้าสมัย
 import { PrismaClient, type Level, type IncidentStatus, type Priority } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 import { calcPriority } from '../src/lib/priority';
 
 const prisma = new PrismaClient();
@@ -24,6 +25,13 @@ async function truncateAll() {
   await prisma.$executeRawUnsafe(`TRUNCATE TABLE ${list} RESTART IDENTITY CASCADE`);
 }
 
+// รหัสผ่านบัญชีตัวอย่าง: ค่าเริ่มต้นใช้เฉพาะการพัฒนา — production ต้องกำหนด SEED_PASSWORD เอง
+function seedPassword(): string {
+  if (process.env.SEED_PASSWORD) return process.env.SEED_PASSWORD;
+  if (process.env.NODE_ENV === 'production') throw new Error('production ต้องกำหนด SEED_PASSWORD (ห้ามใช้รหัสผ่านตัวอย่าง)');
+  return 'servicehub-demo';
+}
+
 async function main() {
   if (process.env.SEED_IF_EMPTY && (await prisma.user.count()) > 0) {
     console.log('ฐานข้อมูลมีข้อมูลอยู่แล้ว — ข้าม seed (ใช้ `npx prisma db seed` เพื่อล้างและ seed ใหม่)');
@@ -40,8 +48,9 @@ async function main() {
   for (const name of groupNames) group[name] = (await prisma.assignmentGroup.create({ data: { name } })).id;
 
   // ── ผู้ใช้ (ตัวอย่างตามบทบาท) ──────────────────────────────────
+  const passwordHash = await bcrypt.hash(seedPassword(), 10);
   const mkUser = async (email: string, name: string, initials: string, role: any, g?: string) =>
-    (await prisma.user.create({ data: { email, name, initials, role, groupId: g ? group[g] : null } })).id;
+    (await prisma.user.create({ data: { email, name, initials, role, groupId: g ? group[g] : null, passwordHash } })).id;
   const me = await mkUser('somsak@servicehub.local', 'สมศักดิ์ ชื่นใจ', 'สช', 'AGENT', 'Service Desk L1');
   const thanaphon = await mkUser('thanaphon@servicehub.local', 'ธนพล ศรีสุข', 'ธศ', 'AGENT', 'Application Support');
   const wanna = await mkUser('wanna@servicehub.local', 'วรรณา ใจดี', 'วจ', 'RESOLVER_GROUP_LEAD', 'Application Support');

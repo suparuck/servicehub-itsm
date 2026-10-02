@@ -4,6 +4,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import type { Level } from '@prisma/client';
 import { getCurrentUser } from '@/lib/currentUser';
+import { isDomainError } from '@/lib/errors';
+import { assertCan, type Role } from '@/lib/permissions';
 import { formatDocNo } from '@/lib/docno';
 import { ALL_STATUSES, type IncidentStatus } from '@/lib/incident';
 import {
@@ -55,6 +57,16 @@ function parseInput(fd: FormData): IncidentInput | { error: string } {
   };
 }
 
+/**
+ * Server Action เรียกได้ด้วย action ID จากหน้าไหนก็ได้ (middleware กั้นเฉพาะ URL) — จึงต้องตรวจบทบาทที่นี่ทุกครั้ง
+ * เพื่อกันผู้ใช้ปลายทางปลอม request เรียก action ของเจ้าหน้าที่
+ */
+async function staffUser() {
+  const user = await getCurrentUser();
+  assertCan(user.role as Role, 'incident.manage');
+  return user;
+}
+
 async function docNo(id: string) {
   const inc = await db.incident.findUnique({ where: { id }, select: { seq: true } });
   return inc ? formatDocNo('INC', inc.seq) : null;
@@ -63,20 +75,26 @@ async function docNo(id: string) {
 export async function createIncidentAction(_: FormState, fd: FormData): Promise<FormState> {
   const input = parseInput(fd);
   if ('error' in input) return { ...input, values: valuesOf(fd) };
-  const user = await getCurrentUser();
-  const inc = await createIncident(input, user?.id ?? null);
+  let seq: number;
+  try {
+    const user = await staffUser();
+    seq = (await createIncident(input, user.id)).seq;
+  } catch (e) {
+    if (isDomainError(e)) return { error: e.message, values: valuesOf(fd) };
+    throw e;
+  }
   revalidatePath('/', 'layout');
-  redirect(`/incidents/${formatDocNo('INC', inc.seq)}`);
+  redirect(`/incidents/${formatDocNo('INC', seq)}`);
 }
 
 export async function updateIncidentAction(id: string, _: FormState, fd: FormData): Promise<FormState> {
   const input = parseInput(fd);
   if ('error' in input) return { ...input, values: valuesOf(fd) };
-  const user = await getCurrentUser();
   try {
-    await updateIncident(id, input, user?.id ?? null);
+    const user = await staffUser();
+    await updateIncident(id, input, user.id);
   } catch (e) {
-    if (e instanceof IncidentError) return { error: e.message, values: valuesOf(fd) };
+    if (isDomainError(e)) return { error: e.message, values: valuesOf(fd) };
     throw e;
   }
   revalidatePath('/', 'layout');
@@ -85,13 +103,13 @@ export async function updateIncidentAction(id: string, _: FormState, fd: FormDat
 
 // ── การกระทำบนหน้ารายละเอียด: ส่ง error กลับด้วย redirect ?error= ──────────
 async function run(id: string, fn: (userId: string | null) => Promise<unknown>): Promise<never> {
-  const user = await getCurrentUser();
   const no = await docNo(id);
   let error: string | null = null;
   try {
-    await fn(user?.id ?? null);
+    const user = await staffUser();
+    await fn(user.id);
   } catch (e) {
-    if (e instanceof IncidentError) error = e.message;
+    if (isDomainError(e)) error = e.message;
     else throw e;
   }
   revalidatePath('/', 'layout');

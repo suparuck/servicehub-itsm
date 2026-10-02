@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { AccountMenu } from '@/components/AccountMenu';
 import { PortalNav } from '@/components/PortalNav';
 import { th } from '@/i18n/th';
 import { getPortalUser } from '@/lib/portalService';
+import type { Role } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,10 +17,8 @@ export default async function PortalLayout({ children }: { children: React.React
         </Link>
         <span className="grow" />
         <PortalNav />
-        <Link href="/" className="inline-flex min-h-[44px] items-center px-2 text-xs text-muted">{th.portal.staffLink}</Link>
-        <div aria-label={user?.name} role="img" className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-soft font-bold text-accent-hover">
-          {user?.initials ?? '··'}
-        </div>
+        {user.role !== 'END_USER' && <Link href="/" className="inline-flex min-h-[44px] items-center px-2 text-xs text-muted">{th.portal.staffLink}</Link>}
+        <AccountMenu name={user.name} role={user.role as Role} tone="light" />
       </header>
       {children}
     </div>

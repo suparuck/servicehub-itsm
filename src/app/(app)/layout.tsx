@@ -1,7 +1,8 @@
+import { redirect } from 'next/navigation';
+import { AccountMenu } from '@/components/AccountMenu';
 import { Sidebar } from '@/components/Sidebar';
-import { UserSwitcher } from '@/components/UserSwitcher';
+import { getCurrentUser } from '@/lib/currentUser';
 import { db } from '@/lib/db';
-import { getCurrentUser, switchEnabled } from '@/lib/currentUser';
 import type { Role } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
@@ -16,17 +17,13 @@ async function getBadges(): Promise<Record<string, string>> {
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const [badges, user, staff] = await Promise.all([
-    getBadges(),
-    getCurrentUser(),
-    switchEnabled() ? db.user.findMany({ where: { role: { not: 'END_USER' } }, orderBy: { name: 'asc' }, select: { email: true, name: true, role: true } }) : [],
-  ]);
+  const user = await getCurrentUser();
+  // ผู้ใช้ปลายทางใช้ได้เฉพาะพอร์ทัล (middleware กั้นแล้ว — ตรวจซ้ำที่นี่เป็นชั้นที่สอง)
+  if (user.role === 'END_USER') redirect('/portal');
+  const badges = await getBadges();
   return (
     <div className="grid min-h-screen grid-cols-1 md:grid-cols-shell">
-      <Sidebar
-        badges={badges}
-        footer={switchEnabled() && user ? <UserSwitcher users={staff as { email: string; name: string; role: Role }[]} currentEmail={user.email} /> : null}
-      />
+      <Sidebar badges={badges} footer={<AccountMenu name={user.name} role={user.role as Role} />} />
       <main className="flex min-w-0 flex-col">{children}</main>
     </div>
   );

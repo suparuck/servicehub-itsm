@@ -1,20 +1,16 @@
-import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { auth } from '@/auth';
 import { db } from './db';
 
-// ยังไม่มี Auth (NextAuth/Entra ID มาภายหลัง) — ผู้ใช้เจ้าหน้าที่ตัวอย่างเลือกได้ด้วยคุกกี้ `demo_user`
-// ตั้งค่า DEMO_USER_SWITCH=off เพื่อปิดการสลับ (ใช้ผู้ใช้จาก DEMO_USER_EMAIL เท่านั้น)
-const DEFAULT_EMAIL = process.env.DEMO_USER_EMAIL ?? 'somsak@servicehub.local';
-export const DEMO_COOKIE = 'demo_user';
-export const switchEnabled = () => process.env.DEMO_USER_SWITCH !== 'off';
-
+/**
+ * ผู้ใช้ที่ล็อกอินอยู่ (อ่านจาก session แล้วดึงข้อมูลล่าสุดจาก DB เพื่อให้การเปลี่ยนบทบาท/ปิดบัญชีมีผลทันที)
+ * ถ้าไม่ได้ล็อกอินหรือบัญชีถูกปิด จะ redirect ไปหน้า /login — จึงคืนค่าเป็น User เสมอ
+ * ใช้ได้ทั้งใน server component และ server action (action ที่เปลี่ยนข้อมูลทุกตัวผ่านฟังก์ชันนี้)
+ */
 export async function getCurrentUser() {
-  let email = DEFAULT_EMAIL;
-  if (switchEnabled()) {
-    const c = (await cookies()).get(DEMO_COOKIE)?.value;
-    if (c) email = c;
-  }
-  const user = await db.user.findUnique({ where: { email } });
-  // คุกกี้เก่า/ผู้ใช้ปลายทางห้ามเข้าโหมดเจ้าหน้าที่ → กลับไปค่าเริ่มต้น
-  if (!user || user.role === 'END_USER') return db.user.findUnique({ where: { email: DEFAULT_EMAIL } });
+  const session = await auth();
+  if (!session?.user?.id) redirect('/login');
+  const user = await db.user.findUnique({ where: { id: session.user.id } });
+  if (!user || !user.active) redirect('/login?reason=inactive');
   return user;
 }
