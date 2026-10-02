@@ -93,4 +93,15 @@ docker compose up --build
     AUTH_SECRET="$(openssl rand -base64 32)" bash scripts/ci-e2e.sh
   ```
 - ตั้ง branch protection ให้ทั้ง 3 job เป็น required check ได้ที่ Settings → Branches (ชื่อ check: `Typecheck · Lint · Unit`, `E2E (Playwright)`, `Production image`)
+- **Action ทุกตัว pin เป็น commit SHA** (`uses: actions/checkout@<sha> # v4.4.0`) เพราะ tag อย่าง `@v4` ย้ายได้ — ผู้ดูแล action (หรือผู้ที่ยึดบัญชีได้) เปลี่ยนโค้ดใต้ tag เดิมแล้ว CI ของเราจะรันโค้ดนั้นพร้อม token ของ repo ทันที · `tests/workflows.test.ts` (รันใน job แรก) ล้มทันทีถ้ามี `uses:` ที่ไม่ pin หรือไม่มีคอมเมนต์เวอร์ชัน
+- **Dependabot** (`.github/dependabot.yml`) เปิด PR ทุกวันจันทร์ 09:00 (เวลาไทย) ให้ CI ตรวจก่อน merge:
+  | ecosystem | รูปแบบ PR |
+  |---|---|
+  | `github-actions` | รวม minor/patch เป็น PR เดียว — เสนอ SHA ใหม่พร้อมแก้คอมเมนต์เวอร์ชันให้ |
+  | `npm` | แยกกลุ่ม production / development (minor+patch รวมกลุ่มละ 1 PR) · เมเจอร์แยก PR ต่อแพ็กเกจ |
+  | `docker`, `docker-compose` | base image (`node`, `postgres`) |
+  - **ไม่เสนอเมเจอร์ของตัวที่ต้องย้ายโค้ด/ข้อมูลเอง**: `next` (16), `eslint` (9), `tailwindcss` (4), `prisma`/`@prisma/client` (7), `next-auth` (รอ v5 เสถียร), `@types/node` (ตรงกับ Node 22), `node` และ `postgres` ใน Docker (Postgres เมเจอร์ใหม่ต้อง dump/restore) — ทำเป็นงานย้ายแยกต่างหากเมื่อพร้อม
+  - **รีวิว PR ของ Dependabot** ดูทั้ง CI (เขียว) และ changelog/release notes ของแพ็กเกจ โดยเฉพาะ action ที่ได้สิทธิ์เขียนหรือ secret
+- **อัปเดต pin ด้วยมือ** (เมื่อไม่รอ Dependabot): `git ls-remote --tags https://github.com/actions/checkout 'refs/tags/v4*' | sort -V` แล้วใช้ SHA ของ tag ที่ต้องการ (tag ของ action เหล่านี้เป็นแบบ lightweight จึงเป็น SHA ของ commit ตรง ๆ; ถ้าเป็น annotated tag ให้ใช้บรรทัดที่ลงท้าย `^{}`)
+- ยังไม่ได้ผูก digest ให้ image `postgres:16-alpine` ใน service ของ workflow และ base image ใน Dockerfile (ใช้ tag ที่ Dependabot ติดตามอยู่) — ทำได้ภายหลังด้วย `image@sha256:…` ถ้าต้องการความเข้มงวดระดับเดียวกัน
 - เทสต์ไม่ผูกกับวันที่จริง (ชื่อเดือนในปฏิทินคำนวณจากเวลาปัจจุบัน และ seed สร้างวันที่สัมพัทธ์กับตอน seed) จึงรันได้ทุกวัน

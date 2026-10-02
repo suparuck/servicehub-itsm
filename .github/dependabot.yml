@@ -1,0 +1,86 @@
+# อัปเดตไลบรารีอัตโนมัติ (Dependabot) — เปิด PR ทุกวันจันทร์ ให้ CI ตรวจก่อน merge
+# หลักการ: minor/patch รวมเป็นกลุ่มเดียวต่อ ecosystem (PR น้อย อ่านง่าย) · เมเจอร์เสนอแยก PR ต่อแพ็กเกจ
+# ยกเว้นแพ็กเกจที่เมเจอร์ใหม่ต้อง "ย้ายโค้ด/ข้อมูล" เอง จึงไม่เสนออัตโนมัติ (ดูเหตุผลในแต่ละ ignore)
+version: 2
+
+updates:
+  # ── GitHub Actions: pin เป็น SHA แล้ว Dependabot จะเสนอ SHA ใหม่พร้อมคอมเมนต์เวอร์ชัน (# vX.Y.Z) ──
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Bangkok
+    commit-message:
+      prefix: "chore(ci)"
+    groups:
+      github-actions:
+        patterns: ["*"]
+        update-types: [minor, patch]
+
+  # ── npm ──
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    groups:
+      production-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+      development-minor-patch:
+        dependency-type: development
+        update-types: [minor, patch]
+    ignore:
+      # เมเจอร์ถัดไปเปลี่ยนวิธีตั้งค่า/พฤติกรรมมาก ต้องย้ายโค้ดและทดสอบเอง — ทำเป็นงานแยก ไม่ให้บอทเสนอ
+      - dependency-name: next # 16: เปลี่ยน middleware/caching defaults
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eslint-config-next
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eslint # 9: flat config
+        update-types: ["version-update:semver-major"]
+      - dependency-name: tailwindcss # 4: เปลี่ยนไปใช้ CSS config
+        update-types: ["version-update:semver-major"]
+      - dependency-name: prisma # 7: ย้าย config ออกจาก package.json + driver adapters
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node" # ต้องตรงกับ Node 22 ที่ใช้ใน Dockerfile/CI
+        update-types: ["version-update:semver-major"]
+      - dependency-name: next-auth # ใช้ v5 beta — ให้ตามรุ่นเดียวกันด้วยมือเมื่อ v5 เสถียร
+        update-types: ["version-update:semver-major"]
+
+  # ── Docker (base image ใน Dockerfile / Dockerfile.dev) ──
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Bangkok
+    commit-message:
+      prefix: "chore(docker)"
+    ignore:
+      - dependency-name: node # อยู่ที่ Node 22 LTS ให้ตรงกับ CI — ข้ามเมเจอร์เมื่อพร้อมเท่านั้น
+        update-types: ["version-update:semver-major"]
+
+  # ── docker-compose (postgres) ──
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Bangkok
+    commit-message:
+      prefix: "chore(docker)"
+    ignore:
+      - dependency-name: postgres # เมเจอร์ใหม่ต้อง dump/restore หรือ pg_upgrade — ห้ามอัปเดตเงียบ ๆ
+        update-types: ["version-update:semver-major"]
