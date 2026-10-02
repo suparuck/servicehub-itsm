@@ -366,7 +366,10 @@ model ServiceRequest {
   catalog     CatalogItem?     @relation(fields: [catalogId], references: [id])
   requesterId String?
   requester   User?            @relation(fields: [requesterId], references: [id])
+  description String?
   createdAt   DateTime         @default(now())
+  deliveredAt DateTime?
+  survey      SurveyResponse?
   approvals   ApprovalStep[]
   tasks       FulfilmentTask[]
 }
@@ -456,14 +459,16 @@ model ImprovementItem {
 }
 
 model SurveyResponse {
-  id         String   @id @default(cuid())
-  incidentId String   @unique
-  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  id         String          @id @default(cuid())
+  incidentId String?         @unique
+  incident   Incident?       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  requestId  String?         @unique
+  request    ServiceRequest? @relation(fields: [requestId], references: [id], onDelete: Cascade)
   userId     String?
-  user       User?    @relation(fields: [userId], references: [id])
+  user       User?           @relation(fields: [userId], references: [id])
   score      Int // 1–5
   comment    String?
-  createdAt  DateTime @default(now())
+  createdAt  DateTime        @default(now())
 }
 
 // ตัวเลขรวมที่ดีไซน์ระบุแต่ไม่มีรายการรองรับ (เช่น CSAT 812 แบบประเมิน, CI 3,912) ใช้จนกว่าจะมีข้อมูลจริง

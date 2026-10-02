@@ -5,7 +5,7 @@ import { useActionState, useState } from 'react';
 import { th } from '@/i18n/th';
 import { calcPriority, LEVELS, type Level } from '@/lib/priority';
 import { PriorityChip } from './ui';
-import type { FormState } from '@/app/incidents/actions';
+import type { FormState } from '@/app/(app)/incidents/actions';
 
 type Opt = { id: string; name: string };
 export interface IncidentFormProps {

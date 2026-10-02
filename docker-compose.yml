@@ -35,7 +35,8 @@ services:
       - .:/app
       - node_modules:/app/node_modules
       - next_cache:/app/.next
-    command: sh -c "npx prisma migrate deploy && npx prisma db seed && npm run dev"
+    # seed อัตโนมัติเฉพาะเมื่อฐานข้อมูลว่าง (รีสตาร์ทไม่ล้างข้อมูล) — ล้างและ seed ใหม่ด้วย: docker compose exec web npx prisma db seed
+    command: sh -c "npx prisma migrate deploy && SEED_IF_EMPTY=1 npx prisma db seed && npm run dev"
 
 volumes:
   pgdata:

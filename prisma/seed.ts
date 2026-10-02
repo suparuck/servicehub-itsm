@@ -25,6 +25,10 @@ async function truncateAll() {
 }
 
 async function main() {
+  if (process.env.SEED_IF_EMPTY && (await prisma.user.count()) > 0) {
+    console.log('ฐานข้อมูลมีข้อมูลอยู่แล้ว — ข้าม seed (ใช้ `npx prisma db seed` เพื่อล้างและ seed ใหม่)');
+    return;
+  }
   await truncateAll();
 
   // ── กลุ่มผู้รับผิดชอบ ───────────────────────────────────────────
@@ -45,7 +49,7 @@ async function main() {
   await mkUser('cab@servicehub.local', 'ประเสริฐ ตรีรัตน์', 'ปต', 'CAB_MEMBER');
   await mkUser('change@servicehub.local', 'กมลา วงศ์ไทย', 'กว', 'CHANGE_MANAGER');
   await mkUser('admin@servicehub.local', 'ผู้ดูแลระบบ', 'ผด', 'ADMIN');
-  const employee = await mkUser('employee@servicehub.local', 'พนักงานตัวอย่าง', 'พต', 'END_USER');
+  const employee = await mkUser('employee@servicehub.local', 'มณีรัตน์ กิจเจริญ', 'มก', 'END_USER');
 
   // ── SLA ────────────────────────────────────────────────────────
   const sla = await prisma.sla.create({
@@ -159,11 +163,23 @@ async function main() {
   const prb412 = await prisma.problem.create({ data: { seq: 412, title: 'Connection pool ของ ERP เต็มช่วงปิดงวด', phase: 'CONTROL', workNote: 'มีวิธีแก้ชั่วคราว', workaround: 'รีสตาร์ท connection pool ของ ERP-DB-02 และจำกัดงานรายงานช่วงปิดงวด' } });
   const prb409 = await prisma.problem.create({ data: { seq: 409, title: 'ไคลเอนต์ VPN รุ่น 5.2 หลุดเมื่อสลับเครือข่าย', phase: 'KNOWN_ERROR', workNote: 'บันทึกใน KB-1187' } });
   const prb401 = await prisma.problem.create({ data: { seq: 401, title: 'คิว SMTP relay ล้นเมื่อส่งเกิน 2,000 ฉบับ/นาที', phase: 'ERROR_CONTROL', phaseLabel: 'รอ Change', workNote: 'ผูกกับ CHG-3376' } });
-  const kbs = [
-    { seq: 1187, title: 'VPN หลุดบ่อยเมื่อสลับ Wi-Fi — วิธีแก้ชั่วคราว', views: 1876, problemId: prb409.id },
-    { seq: 1090, title: 'ตั้งค่า MFA บนโทรศัพท์เครื่องใหม่', views: 2410 },
-    { seq: 1142, title: 'เชื่อมต่อเครื่องพิมพ์สำนักงานใหม่', views: 1302 },
-    { seq: 1165, title: 'กู้คืนไฟล์ที่ลบจาก OneDrive', views: 988 },
+  const kbs: { seq: number; title: string; views: number; problemId?: string; body: string }[] = [
+    {
+      seq: 1187, title: 'VPN หลุดบ่อยเมื่อสลับ Wi-Fi — วิธีแก้ชั่วคราว', views: 1876, problemId: prb409.id,
+      body: 'อาการ: ไคลเอนต์ VPN รุ่น 5.2 หลุดการเชื่อมต่อเมื่อสลับระหว่าง Wi-Fi กับเครือข่ายมือถือ\n\nวิธีแก้ชั่วคราว:\n1. ปิดการเชื่อมต่อ VPN แล้วเชื่อมต่อใหม่หลังสลับเครือข่ายเสร็จ\n2. ในการตั้งค่า VPN เปิด “Reconnect automatically”\n3. หากยังหลุดบ่อย ให้ติดตั้งไคลเอนต์รุ่น 5.1 จากพอร์ทัลซอฟต์แวร์\n\nสถานะ: เป็น Known Error (PRB-0409) ทีมเครือข่ายกำลังรอเวอร์ชันแก้ไขจากผู้ผลิต',
+    },
+    {
+      seq: 1090, title: 'ตั้งค่า MFA บนโทรศัพท์เครื่องใหม่', views: 2410,
+      body: 'ก่อนเริ่ม: ให้เครื่องเดิมยังใช้งานได้ หรือเตรียมรหัสสำรอง\n\n1. เปิดแอป Microsoft Authenticator บนเครื่องใหม่ แล้วเลือก “กู้คืนจากข้อมูลสำรอง”\n2. ลงชื่อเข้าใช้ด้วยบัญชีส่วนตัวที่ใช้สำรองข้อมูล\n3. ตรวจสอบว่าบัญชีที่ทำงานปรากฏในแอป แล้วทดสอบเข้าสู่ระบบ\n\nหากเครื่องเดิมหายหรือใช้ไม่ได้ ให้ขอรีเซ็ต MFA ผ่านรายการ “บัญชีผู้ใช้และรหัสผ่าน” ในแคตตาล็อกบริการ',
+    },
+    {
+      seq: 1142, title: 'เชื่อมต่อเครื่องพิมพ์สำนักงานใหม่', views: 1302,
+      body: '1. เชื่อมต่อเครือข่ายสำนักงาน (ไม่ใช่ Wi-Fi ผู้เยี่ยมชม)\n2. เปิด “การตั้งค่า › เครื่องพิมพ์และสแกนเนอร์ › เพิ่มอุปกรณ์”\n3. เลือกเครื่องพิมพ์ที่มีชื่อชั้นของคุณ เช่น PRN-F7-01\n4. พิมพ์หน้าทดสอบเพื่อยืนยัน\n\nหากไม่พบเครื่องพิมพ์ ให้แจ้งปัญหาพร้อมระบุชั้นและรหัสเครื่องที่ติดอยู่ด้านหน้าเครื่อง',
+    },
+    {
+      seq: 1165, title: 'กู้คืนไฟล์ที่ลบจาก OneDrive', views: 988,
+      body: 'ไฟล์ที่ลบจะอยู่ในถังขยะ 93 วัน\n\n1. เข้า OneDrive บนเว็บ แล้วเลือก “ถังรีไซเคิล”\n2. เลือกไฟล์ที่ต้องการ แล้วกด “กู้คืน”\n3. หากไม่พบ ให้เลือก “กู้คืน OneDrive ของคุณ” เพื่อย้อนสถานะไปยังเวลาที่ต้องการ (ภายใน 30 วัน)',
+    },
   ];
   for (const k of kbs) await prisma.knowledgeArticle.create({ data: { ...k, status: 'PUBLISHED' } });
 
@@ -322,7 +338,27 @@ async function main() {
     cat.push((await prisma.catalogItem.create({ data: { name: c[0], items: c[1], slaText: c[2], serviceId: svc[c[3]], sortOrder: i } })).id);
   }
   await prisma.serviceRequest.create({ data: { seq: 10291, title: 'ขอโน้ตบุ๊กใหม่ (เปลี่ยนเครื่องตามรอบ)', status: 'FULFILLING', stage: 3, nextNote: 'ส่ง → อนุมัติ → จัดเตรียม → ส่งมอบ · คาดว่าได้รับ 6 ต.ค.', catalogId: cat[0], requesterId: employee } });
+  await prisma.serviceRequest.create({ data: { seq: 10233, title: 'ติดตั้งโปรแกรม Adobe Acrobat', status: 'DELIVERED', stage: 4, catalogId: cat[2], requesterId: employee, createdAt: minutesAgo(60 * 24 * 4), deliveredAt: minutesAgo(60 * 24) } });
   await prisma.serviceRequest.create({ data: { seq: 10288, title: 'ขอสิทธิ์โฟลเดอร์ฝ่ายการเงิน', status: 'PENDING_APPROVAL', stage: 1, nextNote: 'รอหัวหน้าฝ่ายการเงินอนุมัติ', catalogId: cat[2], requesterId: employee } });
+
+  // ข้อความถึงผู้ใช้ใน INC-24811 (แสดงในพอร์ทัลเป็น “ทีม IT ขอข้อมูลเพิ่ม”)
+  const outlook = await prisma.incident.findUnique({ where: { seq: 24811 } });
+  if (outlook) {
+    await prisma.incident.update({
+      where: { id: outlook.id },
+      data: {
+        reporterId: employee, status: 'PENDING_USER',
+        description: 'Outlook ไม่แสดงนัดหมายที่สร้างจากมือถือ ปฏิทินบนเดสก์ท็อปไม่อัปเดต',
+        notes: { create: { authorId: me, kind: 'ขอข้อมูลเพิ่ม', tone: 'ok', visibility: 'CUSTOMER', body: 'ทีม IT ขอภาพหน้าจอข้อความผิดพลาด และแจ้งเวอร์ชันของ Outlook ที่ใช้อยู่' } },
+      },
+    });
+  }
+
+  // Incident ที่รอผู้ใช้ต้องหยุดตัวจับเวลา SLA (สอดคล้องกับกติกา PENDING_USER)
+  await prisma.slaTimer.updateMany({
+    where: { metric: 'RESOLVE', achievedAt: null, incident: { status: 'PENDING_USER' } },
+    data: { pausedAt: now, state: 'PAUSED' },
+  });
 
   // ── Continual Improvement ──────────────────────────────────────
   const imps: [string, number][] = [['ลด MTTR ของ P2 ลง 20% ด้วย Swarming', 5], ['Chatbot ตอบคำขอรีเซ็ตรหัสผ่านอัตโนมัติ', 3], ['รวม CMDB กับระบบสินทรัพย์ (ITAM)', 6]];

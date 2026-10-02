@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState } from 'react';
 import { th } from '@/i18n/th';
-import type { CiFormState } from '@/app/cmdb/actions';
+import type { CiFormState } from '@/app/(app)/cmdb/actions';
 
 type Opt = { id: string; name: string };
 export interface CiFormProps {

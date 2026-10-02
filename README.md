@@ -31,4 +31,4 @@ docker compose up --build
 | `docker compose exec web npx vitest run` | รัน unit test |
 | `docker compose down -v` | หยุดและลบข้อมูลฐานข้อมูล |
 
-ความคืบหน้า: เฟส 1–5 เสร็จ (scaffold, schema + seed, แดชบอร์ด `/`, Incident: รายการ รายละเอียด สร้าง/แก้ไข SLA timer work notes, CMDB: รายการ รายละเอียด CI แผนผังความสัมพันธ์ impact analysis data quality) — หน้าอื่นยังเป็น placeholder
+ความคืบหน้า: เฟส 1–6 เสร็จ (scaffold, schema + seed, แดชบอร์ด `/`, Incident: รายการ รายละเอียด สร้าง/แก้ไข SLA timer work notes, CMDB: รายการ รายละเอียด CI แผนผังความสัมพันธ์ impact analysis data quality, Portal: ค้นหา แคตตาล็อก แจ้งปัญหา/ขอบริการ ติดตามรายการ CSAT) — หน้าอื่นยังเป็น placeholder
