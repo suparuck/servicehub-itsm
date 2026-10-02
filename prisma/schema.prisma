@@ -123,6 +123,12 @@ enum NoteVisibility {
   CUSTOMER
 }
 
+enum ApprovalDecision {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum SlaMetric {
   RESPONSE
   RESOLVE
@@ -152,6 +158,8 @@ model User {
   notes             WorkNote[]
   ownedCis          ConfigurationItem[] @relation("CiOwnerUser")
   surveys           SurveyResponse[]
+  changeApprovals   ChangeApproval[]
+  auditLogs         AuditLog[]
 }
 
 model AssignmentGroup {
@@ -392,40 +400,45 @@ model FulfilmentTask {
 }
 
 model Problem {
-  id         String             @id @default(cuid())
-  seq        Int                @unique @default(autoincrement()) // PRB-####
-  title      String
-  phase      ProblemPhase       @default(IDENTIFICATION)
-  phaseLabel String?
-  rootCause  String?
-  workaround String?
-  workNote   String? // ข้อความสรุปบนแดชบอร์ด
-  createdAt  DateTime           @default(now())
-  incidents  Incident[]
-  articles   KnowledgeArticle[]
-  changes    Change[]
+  id          String             @id @default(cuid())
+  seq         Int                @unique @default(autoincrement()) // PRB-####
+  title       String
+  phase       ProblemPhase       @default(IDENTIFICATION)
+  phaseLabel  String?
+  description String?
+  rootCause   String?
+  workaround  String?
+  workNote    String? // ข้อความสรุปบนแดชบอร์ด
+  resolvedAt  DateTime?
+  createdAt   DateTime           @default(now())
+  incidents   Incident[]
+  articles    KnowledgeArticle[]
+  changes     Change[]
 }
 
 model Change {
-  id                 String       @id @default(cuid())
-  seq                Int          @unique @default(autoincrement()) // CHG-####
+  id                 String           @id @default(cuid())
+  seq                Int              @unique @default(autoincrement()) // CHG-####
   title              String
   type               ChangeType
   risk               RiskLevel
-  status             ChangeStatus @default(DRAFT)
+  status             ChangeStatus     @default(DRAFT)
   windowStart        DateTime
   windowEnd          DateTime?
   serviceId          String?
-  service            Service?     @relation(fields: [serviceId], references: [id])
+  service            Service?         @relation(fields: [serviceId], references: [id])
   problemId          String?
-  problem            Problem?     @relation(fields: [problemId], references: [id])
+  problem            Problem?         @relation(fields: [problemId], references: [id])
+  description        String?
   implementationPlan String?
   backoutPlan        String?
   outcome            String?
   cabApproval        String? // CAB / ECAB
-  createdAt          DateTime     @default(now())
+  completedAt        DateTime?
+  createdAt          DateTime         @default(now())
   cis                ChangeCI[]
   incidents          Incident[]
+  approvals          ChangeApproval[]
 
   @@index([windowStart])
 }
@@ -448,6 +461,7 @@ model KnowledgeArticle {
   views     Int           @default(0)
   problemId String?
   problem   Problem?      @relation(fields: [problemId], references: [id])
+  updatedAt DateTime      @default(now()) @updatedAt
   createdAt DateTime      @default(now())
 }
 
@@ -488,4 +502,33 @@ model CIChangeLog {
   source String // เช่น CHG-3381 / Discovery / แก้ไขโดย สมชาย ก.
 
   @@index([ciId, at])
+}
+
+// การอนุมัติ Change โดย CAB / ECAB
+model ChangeApproval {
+  id         String           @id @default(cuid())
+  changeId   String
+  change     Change           @relation(fields: [changeId], references: [id], onDelete: Cascade)
+  board      String // CAB | ECAB
+  approverId String
+  approver   User             @relation(fields: [approverId], references: [id])
+  decision   ApprovalDecision @default(PENDING)
+  comment    String?
+  decidedAt  DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@unique([changeId, approverId])
+}
+
+// บันทึกกิจกรรมของ Problem / Change / Request / KB (ใช้ร่วมกัน)
+model AuditLog {
+  id         String   @id @default(cuid())
+  entityType String
+  entityId   String
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  text       String
+  at         DateTime @default(now())
+
+  @@index([entityType, entityId, at])
 }

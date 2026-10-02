@@ -6,7 +6,7 @@ import { th } from '@/i18n/th';
 import { NAV } from '@/lib/nav';
 import { cx } from './ui';
 
-export function Sidebar({ badges }: { badges: Record<string, string> }) {
+export function Sidebar({ badges, footer }: { badges: Record<string, string>; footer?: React.ReactNode }) {
   const pathname = usePathname();
   const isActive = (href: string) => (href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/'));
 
@@ -55,6 +55,7 @@ export function Sidebar({ badges }: { badges: Record<string, string> }) {
           })}
         </div>
       ))}
+      {footer}
     </nav>
   );
 }
