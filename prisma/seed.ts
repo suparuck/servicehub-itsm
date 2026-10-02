@@ -105,19 +105,19 @@ async function main() {
     { ciId: 'CI-APP-0042', name: 'ERP-APP-02', subtitle: 'App Server · Linux', ciClass: 'APPLICATION', classLabel: 'Application Server', ownerGroup: 'Application Support', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60), driftNote: 'RAM ในทะเบียน 128 GB ต่างจากที่ Discovery พบ 96 GB' },
     {
       ciId: 'CI-DB-00217', name: 'ERP-DB-02', subtitle: 'Oracle 19c · RAC node 2', ciClass: 'DATABASE', classLabel: 'Database', ownerGroup: 'DBA Team', ownerUser: somchai, lifecycle: 'LIVE',
-      discovered: minutesAgo(14 * 60), verified: new Date('2026-09-18T03:00:00+07:00'),
+      discovered: minutesAgo(14 * 60), verified: minutesAgo(14 * 24 * 60),
       attributes: {
         'IP Address': '10.20.4.17', 'เวอร์ชัน': 'Oracle 19.21 (RU ม.ค. 2569)', 'เจ้าของ CI': 'DBA Team · สมชาย ก.',
         'เจ้าของบริการ': 'ฝ่ายบัญชีและการเงิน', 'ความสำคัญทางธุรกิจ': 'Tier 1 — สำคัญยิ่ง', 'ที่ตั้ง': 'Data Center 1 · Rack C-12',
         'ช่วงบำรุงรักษา': 'อา. 01:00–05:00 น.', 'แหล่งข้อมูล': 'Discovery + ยืนยันด้วยมือ',
-        'ยืนยันล่าสุด': '18 ก.ย. 2569', 'สินทรัพย์ที่ผูก (ITAM)': 'ASSET-SRV-0891',
+        'สินทรัพย์ที่ผูก (ITAM)': 'ASSET-SRV-0891',
       },
     },
     { ciId: 'CI-DB-00216', name: 'ERP-DB-01', subtitle: 'Oracle 19c · RAC node 1', ciClass: 'DATABASE', classLabel: 'Database', ownerGroup: 'DBA Team', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
     { ciId: 'CI-NET-0388', name: 'FW-North-01', subtitle: 'Firewall · สาขาภาคเหนือ', ciClass: 'NETWORK_DEVICE', classLabel: 'Network Device', ownerGroup: 'Network Ops', lifecycle: 'MAINTENANCE', discovered: minutesAgo(14 * 60) },
     { ciId: 'CI-NET-0412', name: 'WAN-North-Link', subtitle: 'Network Link', ciClass: 'NETWORK_DEVICE', classLabel: 'Network Link', ownerGroup: 'Network Ops', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
-    { ciId: 'CI-CLD-1120', name: 'hr-app-prod (AKS)', subtitle: 'Azure Kubernetes', ciClass: 'CLOUD_RESOURCE', classLabel: 'Cloud Resource', ownerGroup: 'HRIS Team', lifecycle: 'PLANNED', discovered: new Date('2026-10-01T22:00:00+07:00') },
-    { ciId: 'CI-SRV-0207', name: 'ERP-REPORT-OLD', subtitle: 'Server', ciClass: 'SERVER', classLabel: 'Server', lifecycle: 'RETIRED', discovered: new Date('2026-06-14T03:00:00+07:00') },
+    { ciId: 'CI-CLD-1120', name: 'hr-app-prod (AKS)', subtitle: 'Azure Kubernetes', ciClass: 'CLOUD_RESOURCE', classLabel: 'Cloud Resource', ownerGroup: 'HRIS Team', lifecycle: 'PLANNED', discovered: minutesAgo(26 * 60) },
+    { ciId: 'CI-SRV-0207', name: 'ERP-REPORT-OLD', subtitle: 'Server', ciClass: 'SERVER', classLabel: 'Server', lifecycle: 'RETIRED', discovered: minutesAgo(110 * 24 * 60) },
     { ciId: 'CI-SRV-0301', name: 'VMH-DC1-07', subtitle: 'ESXi Host · DC1', ciClass: 'SERVER', classLabel: 'ESXi Host', ownerGroup: 'Data Platform', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
     { ciId: 'CI-SAN-0012', name: 'SAN-DC1-A', subtitle: 'Storage · 42 TB', ciClass: 'SERVER', classLabel: 'Storage', ownerGroup: 'Data Platform', lifecycle: 'LIVE', discovered: minutesAgo(14 * 60) },
     // Business Service ที่ยังไม่มี Service Model (6 รายการ — ตรงกับงาน data quality ในดีไซน์)
@@ -132,8 +132,8 @@ async function main() {
     { ciId: 'CI-EUD-1936', name: 'NB-FIN-0192', subtitle: 'โน้ตบุ๊ก · ฝ่ายการเงิน', ciClass: 'END_USER_DEVICE', classLabel: 'End-user Device', ownerGroup: 'Desktop Support', lifecycle: 'LIVE', discovered: minutesAgo(30 * 60) },
     { ciId: 'CI-EUD-1937', name: 'PC-NORTH-021', subtitle: 'เดสก์ท็อป · สาขาภาคเหนือ', ciClass: 'END_USER_DEVICE', classLabel: 'End-user Device', ownerGroup: 'Desktop Support', lifecycle: 'MAINTENANCE', discovered: minutesAgo(30 * 60) },
     { ciId: 'CI-EUD-1938', name: 'NB-HR-0044', subtitle: 'โน้ตบุ๊ก · ฝ่ายบุคคล', ciClass: 'END_USER_DEVICE', classLabel: 'End-user Device', lifecycle: 'LIVE', discovered: minutesAgo(120 * 24 * 60) },
-    { ciId: 'CI-LIC-0100', name: 'Oracle DB Enterprise License', subtitle: 'ไลเซนส์ 16 core', ciClass: 'SOFTWARE_LICENSE', classLabel: 'Software License', ownerGroup: 'DBA Team', lifecycle: 'LIVE', verified: new Date('2026-08-15T10:00:00+07:00') },
-    { ciId: 'CI-LIC-0101', name: 'Adobe Creative Cloud (50 seats)', subtitle: 'ไลเซนส์รายปี', ciClass: 'SOFTWARE_LICENSE', classLabel: 'Software License', ownerGroup: 'Desktop Support', lifecycle: 'LIVE', verified: new Date('2026-07-01T10:00:00+07:00') },
+    { ciId: 'CI-LIC-0100', name: 'Oracle DB Enterprise License', subtitle: 'ไลเซนส์ 16 core', ciClass: 'SOFTWARE_LICENSE', classLabel: 'Software License', ownerGroup: 'DBA Team', lifecycle: 'LIVE', verified: minutesAgo(48 * 24 * 60) },
+    { ciId: 'CI-LIC-0101', name: 'Adobe Creative Cloud (50 seats)', subtitle: 'ไลเซนส์รายปี', ciClass: 'SOFTWARE_LICENSE', classLabel: 'Software License', ownerGroup: 'Desktop Support', lifecycle: 'LIVE', verified: minutesAgo(93 * 24 * 60) },
   ];
   const ci: Record<string, string> = {};
   for (const c of ciDefs) {
@@ -159,7 +159,7 @@ async function main() {
   await rel('ERP-DB-02', 'VMH-DC1-07', 'RUNS_ON');
   await rel('ERP-DB-02', 'SAN-DC1-A', 'DEPENDS_ON');
   await rel('ERP-APP-01', 'WAN-North-Link', 'CONNECTS_TO');
-  await prisma.asset.create({ data: { assetTag: 'ASSET-SRV-0891', ciId: ci['ERP-DB-02'], vendor: 'Oracle / Dell', supportUntil: new Date('2027-03-31T00:00:00+07:00') } });
+  await prisma.asset.create({ data: { assetTag: 'ASSET-SRV-0891', ciId: ci['ERP-DB-02'], vendor: 'Oracle / Dell', supportUntil: minutesAhead(180 * 24 * 60) } });
   const log = (name: string, daysAgo: number, what: string, source: string) =>
     prisma.cIChangeLog.create({ data: { ciId: ci[name], at: new Date(now.getTime() - daysAgo * 86_400_000), what, source } });
   await log('ERP-DB-02', 0, 'ปรับ processes 1500 → 2000 (รอ)', 'CHG-3381');

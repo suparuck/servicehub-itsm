@@ -31,13 +31,15 @@ docker compose up --build
 | `docker compose exec web npx vitest run` | รัน unit test |
 | `docker compose down -v` | หยุดและลบข้อมูลฐานข้อมูล |
 
-ความคืบหน้า: เฟส 1–7 เสร็จ + Auth (Auth.js) + E2E (Playwright 108 เคส) + จัดการผู้ใช้/เปลี่ยนรหัสผ่าน — แดชบอร์ด, Incident, CMDB, Portal, Problem, Change (ปฏิทิน + CAB/ECAB), Knowledge, SLA reports และคิว Service Request
+ความคืบหน้า: เฟส 1–7 เสร็จ + Auth (Auth.js) + E2E (Playwright 110 เคส) + CI (GitHub Actions) + จัดการผู้ใช้/เปลี่ยนรหัสผ่าน — แดชบอร์ด, Incident, CMDB, Portal, Problem, Change (ปฏิทิน + CAB/ECAB), Knowledge, SLA reports และคิว Service Request
 
 ## การยืนยันตัวตน (Auth.js) และสิทธิ์
 - ทุกหน้าต้องล็อกอิน (middleware) — ไปที่ http://localhost:3000 แล้วระบบพาไป `/login`; ผู้ใช้ปลายทาง (`END_USER`) เข้าได้เฉพาะ `/portal`
 - Session เป็น JWT อายุ 8 ชม. · รหัสผ่านเก็บแบบ bcrypt · ผิดเกิน 5 ครั้ง/บัญชี (หรือ 30 ครั้ง/ไอพี) ล็อกชั่วคราว 15 นาที
 - สิทธิ์ตามบทบาทบังคับในฝั่ง service ทุกครั้งที่แก้ข้อมูล (`src/lib/permissions.ts`) — การซ่อนปุ่มใน UI เป็นแค่ความสะดวก
 - **Microsoft Entra ID (Azure AD)**: กำหนด `AUTH_MICROSOFT_ENTRA_ID_ID/SECRET/ISSUER` (ดู `.env.example`) จะมีปุ่ม "เข้าสู่ระบบด้วย Microsoft" — รับเฉพาะผู้ใช้ที่มีอยู่ในระบบแล้ว (จับคู่ด้วยอีเมล) ไม่สร้างบัญชีอัตโนมัติ
+- **หลัง reverse proxy**: ตั้ง `AUTH_URL=https://โดเมนของคุณ` เพื่อให้ redirect (เช่น เด้งไปหน้า login) ชี้โดเมนสาธารณะ — ใน production ฝั่ง standalone `request.url` เป็นโฮสต์ภายในของเซิร์ฟเวอร์ ไม่ใช่โดเมนที่ผู้ใช้เห็น (ถ้าไม่ตั้ง จะใช้ `X-Forwarded-Proto/Host` แล้วถอยไป `Host`)
+- session ไม่ถูกต่ออายุเองทุกคำขอ (middleware อ่าน token อย่างเดียว) — หมดอายุ 8 ชม. หลังล็อกอิน แล้วต้องเข้าใหม่; ทำแบบนี้เพราะการต่ออายุทุกคำขอทำให้ "ออกจากระบบ" ไม่สำเร็จเมื่อมี prefetch ค้างอยู่
 - **production**: ต้องตั้ง `AUTH_SECRET` (`openssl rand -base64 32`) และ `SEED_PASSWORD` เอง; ค่าใน `docker-compose.yml` ใช้เพื่อพัฒนาเท่านั้น และการจำกัดการล็อกอินเก็บในหน่วยความจำของเซิร์ฟเวอร์เดียว (หลายเครื่องต้องย้ายไป Redis)
 
 ### จัดการผู้ใช้และรหัสผ่าน
@@ -71,3 +73,24 @@ docker compose up --build
 | `npm run test:e2e:report` | เปิดรายงาน HTML ของการรันล่าสุด |
 
 ไฟล์ E2E เรียงตามเลขนำหน้า (`tests/e2e/01-…`) เพราะแชร์ฐานข้อมูลเดียวกันและมีการแก้ข้อมูลระหว่างทดสอบ
+
+## CI (GitHub Actions)
+ไฟล์ `.github/workflows/ci.yml` รันทุก push เข้า `main` และทุก Pull Request (ยกเลิกการรันเก่าของ branch เดียวกันเมื่อมี push ใหม่) ประกอบด้วย 3 job ขนานกัน:
+
+| Job | ทำอะไร | เวลาโดยประมาณ |
+|---|---|---|
+| **Typecheck · Lint · Unit** | `tsc --noEmit` → `next lint` → `vitest run` | ~2 นาที |
+| **E2E (Playwright)** | PostgreSQL 16 → migrate จากฐานว่าง + seed → `next build` → เซิร์ฟเวอร์ standalone → Playwright (Chromium) ทุกเคส | ~10–15 นาที |
+| **Production image** | `docker build` ด้วย `Dockerfile` จริง + เปิดคอนเทนเนอร์แล้วเช็ก `/login` ตอบ 200 | ~3 นาที |
+
+- E2E รันกับ **build production** (ไม่ใช่ dev server) เพื่อให้ตรงกับของที่ปล่อยจริงและเสถียรกว่า; เกิดล้มเหลวจะ retry 1 ครั้ง และเก็บ **รายงาน HTML / trace / screenshot** เป็น artifact (เก็บ 7 วัน) ดาวน์โหลดจากหน้า run
+- `AUTH_SECRET` สุ่มใหม่ทุกครั้งและถูกซ่อนใน log · รหัสผ่านบัญชีตัวอย่างใน CI คือค่าตั้งต้นของ seed (ฐานข้อมูลชั่วคราวที่ถูกทิ้งหลังจบ job)
+- ขั้นตอน E2E ทั้งหมดอยู่ใน `scripts/ci-e2e.sh` — **รันซ้ำในเครื่องได้เหมือนบน CI** (ต้องมี PostgreSQL ว่างสักตัว; สคริปต์จะล้างและ seed ฐานข้อมูลนั้น):
+  ```bash
+  docker run -d --name sh-ci-pg -e POSTGRES_USER=servicehub -e POSTGRES_PASSWORD=servicehub -e POSTGRES_DB=servicehub -p 55432:5432 postgres:16-alpine
+  CI=true PORT=3100 E2E_BROWSER=chromium \
+    DATABASE_URL="postgresql://servicehub:servicehub@127.0.0.1:55432/servicehub?schema=public" \
+    AUTH_SECRET="$(openssl rand -base64 32)" bash scripts/ci-e2e.sh
+  ```
+- ตั้ง branch protection ให้ทั้ง 3 job เป็น required check ได้ที่ Settings → Branches (ชื่อ check: `Typecheck · Lint · Unit`, `E2E (Playwright)`, `Production image`)
+- เทสต์ไม่ผูกกับวันที่จริง (ชื่อเดือนในปฏิทินคำนวณจากเวลาปัจจุบัน และ seed สร้างวันที่สัมพัทธ์กับตอน seed) จึงรันได้ทุกวัน

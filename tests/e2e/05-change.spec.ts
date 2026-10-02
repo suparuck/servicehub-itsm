@@ -1,17 +1,19 @@
 import { expect, test } from '@playwright/test';
-import { alert, asRole, authFile, waitHydrated } from './helpers';
+import { alert, asRole, authFile, monthHeading, waitHydrated } from './helpers';
 
 test.describe('Change Enablement', () => {
   test.use({ storageState: authFile('agent') });
 
-  test('ปฏิทินเดือน ต.ค. 2569 แสดง Change ที่กำหนดไว้ และเลื่อนเดือนได้', async ({ page }) => {
+  test('ปฏิทินเดือนปัจจุบันแสดง Change ของวันนี้ และเลื่อนเดือนได้', async ({ page }) => {
+    // ไม่ผูกกับวันที่จริง: Change ตัวอย่าง CHG-3381 ถูก seed ให้เป็น "วันนี้" เสมอ
     await page.goto('/changes?view=calendar');
-    await expect(page.getByRole('heading', { name: 'ตุลาคม 2569' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: monthHeading() })).toBeVisible();
     const grid = page.getByRole('grid', { name: 'ปฏิทิน Change' });
     await expect(grid.getByRole('link', { name: /CHG-3381|แพตช์ฐานข้อมูล ERP/ }).first()).toBeVisible();
     await page.getByRole('link', { name: /เดือนถัดไป/ }).click();
-    await expect(page.getByRole('heading', { name: 'พฤศจิกายน 2569' })).toBeVisible();
-    await expect(page.getByText('ไม่มี Change ในเดือนนี้')).toBeVisible();
+    await expect(page.getByRole('heading', { name: monthHeading(1) })).toBeVisible();
+    await page.getByRole('link', { name: /เดือนก่อน/ }).click();
+    await expect(page.getByRole('heading', { name: monthHeading() })).toBeVisible();
   });
 
   test('เจ้าหน้าที่ทั่วไปเห็น Change แต่อนุมัติไม่ได้', async ({ page }) => {

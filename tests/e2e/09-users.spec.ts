@@ -1,7 +1,7 @@
 import { expect, test, type Browser } from '@playwright/test';
 import { alert, asRole, login, waitHydrated } from './helpers';
 
-const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
+const baseURL = process.env.E2E_BASE_URL ?? 'http://:3000';
 const fresh = async (browser: Browser) => {
   const context = await browser.newContext({ baseURL, locale: 'th-TH', timezoneId: 'Asia/Bangkok', extraHTTPHeaders: { 'x-forwarded-for': '198.51.100.9' } });
   return { context, page: await context.newPage() };
@@ -125,7 +125,7 @@ test.describe.serial('ผู้ใช้ใหม่: สร้าง → รห
     await login(page, email, temp);
     await expect(alert(page)).toHaveText('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     await login(page, email, newPw);
-    await expect(page).toHaveURL(/localhost:\d+\/$/); // เข้าหน้าแรกเจ้าหน้าที่ตามปกติ ไม่ถูกบังคับเปลี่ยนอีก
+    await expect(page).toHaveURL(/:\d+\/$/); // เข้าหน้าแรกเจ้าหน้าที่ตามปกติ ไม่ถูกบังคับเปลี่ยนอีก
     await expect(page.getByRole('heading', { level: 1, name: 'แดชบอร์ดบริหารจัดการบริการ IT' })).toBeVisible();
     await context.close();
   });
@@ -133,7 +133,7 @@ test.describe.serial('ผู้ใช้ใหม่: สร้าง → รห
   test('ผู้ดูแลรีเซ็ตรหัสผ่าน → session เดิมของผู้ใช้หมดอายุทันที และต้องเปลี่ยนใหม่', async ({ browser }) => {
     const user = await fresh(browser);
     await login(user.page, email, newPw);
-    await expect(user.page).toHaveURL(/localhost:\d+\/$/);
+    await expect(user.page).toHaveURL(/:\d+\/$/);
 
     const admin = await asRole(browser, 'admin');
     await admin.page.goto(`/admin/users/${userId}`);
@@ -175,7 +175,7 @@ test.describe.serial('ผู้ใช้ใหม่: สร้าง → รห
     await user.page.getByRole('button', { name: 'เปลี่ยนรหัสผ่าน' }).click();
     await user.page.waitForURL(/\/login\?reason=changed/);
     await login(user.page, email, pw3);
-    await expect(user.page).toHaveURL(/localhost:\d+\/$/);
+    await expect(user.page).toHaveURL(/:\d+\/$/);
 
     await admin.page.reload();
     await waitHydrated(admin.page);

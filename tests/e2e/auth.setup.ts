@@ -5,7 +5,7 @@ import { USERS, authFile, login, type UserKey } from './helpers';
 for (const key of Object.keys(USERS) as UserKey[]) {
   setup(`login as ${key}`, async ({ page }) => {
     await login(page, USERS[key]);
-    await expect(page).toHaveURL(key === 'endUser' ? /\/portal$/ : /localhost:\d+\/$/);
+    await expect(page).toHaveURL(key === 'endUser' ? /\/portal$/ : /:\d+\/$/);
     await page.context().storageState({ path: authFile(key) });
   });
 }

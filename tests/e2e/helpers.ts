@@ -48,3 +48,10 @@ export async function asRole(browser: Browser, role: UserKey, baseURL = process.
 
 /** ตัวเลขใน text (ตัดตัวคั่นหลักพัน) */
 export const num = (s: string | null) => Number((s ?? '').replace(/[^\d.]/g, ''));
+
+/** ชื่อเดือนและปี พ.ศ. ตามเวลาไทย เช่น "ตุลาคม 2569" (offset = เลื่อนกี่เดือน) — เทสต์ไม่ผูกกับวันที่จริง */
+export function monthHeading(offset = 0, now = new Date()) {
+  const [y, m] = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok' }).format(now).split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + offset, 1));
+  return new Intl.DateTimeFormat('th-TH-u-ca-buddhist', { timeZone: 'UTC', month: 'long', year: 'numeric' }).format(d);
+}

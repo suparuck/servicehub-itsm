@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth, entraEnabled } from '@/auth';
-import { isSessionStale } from '@/lib/currentUser';
+import { isSessionStale } from '@/lib/session';
 import { db } from '@/lib/db';
 import type { Role } from '@/lib/permissions';
 import { homeFor, safeCallback } from '@/lib/routeAccess';

@@ -1,12 +1,7 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/auth';
 import { db } from './db';
-
-/** session ที่ล็อกอินก่อนเวลาเปลี่ยนรหัสผ่านล่าสุด ถือว่าหมดอายุ (เทียบระดับวินาที) */
-export function isSessionStale(authAtSec: number | undefined, passwordChangedAt: Date | null | undefined): boolean {
-  if (!passwordChangedAt) return false;
-  return (authAtSec ?? 0) < Math.floor(passwordChangedAt.getTime() / 1000);
-}
+import { isSessionStale } from './session';
 
 /**
  * ผู้ใช้ที่ล็อกอินอยู่ (อ่านจาก session แล้วดึงข้อมูลล่าสุดจาก DB เพื่อให้การเปลี่ยนบทบาท/ปิดบัญชีมีผลทันที)
