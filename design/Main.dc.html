@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>แดชบอร์ด ITSM</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EEF0EC}
+a{color:#1F4FD8}a:hover{color:#163A9E}
+.shell{display:grid;grid-template-columns:256px minmax(0,1fr);min-height:100vh}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.chain{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.cols{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr);gap:16px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.trow{display:grid;grid-template-columns:104px minmax(0,2.4fr) minmax(0,1fr) 108px 120px 132px;gap:12px;align-items:center}
+@media (max-width:1180px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.chain{grid-template-columns:repeat(3,minmax(0,1fr))}.cols{grid-template-columns:1fr}}
+@media (max-width:860px){.shell{grid-template-columns:1fr}.side{display:none}.two{grid-template-columns:1fr}.trow{grid-template-columns:96px minmax(0,1fr) 96px}.hide-s{display:none}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.chain{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</helmet>
+<div class="shell" style="font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; color: #16191D; background: #EEF0EC">
+
+<!-- Sidebar -->
+<nav class="side" aria-label="เมนูหลัก" style="background: #16191D; color: #D9DCE1; padding: 20px 14px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 4px 8px 12px">
+<div style="width: 34px; height: 34px; border-radius: 8px; background: {{accent}}; display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"></path><path d="M12 12l8-4.5"></path><path d="M12 12v9"></path><path d="M12 12L4 7.5"></path></svg>
+</div>
+<div style="display: flex; flex-direction: column">
+<span style="font-weight: 700; font-size: 16px; color: #fff">ServiceHub</span>
+<span style="font-size: 11px; color: #9AA1AC; letter-spacing: 0.04em">ITSM · ITIL 4</span>
+</div>
+</div>
+<sc-for list="{{nav}}" as="g" hint-placeholder-count="6">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="font-size: 11px; font-weight: 600; color: #8C93A0; letter-spacing: 0.06em; padding: 0 10px 4px">{{g.group}}</div>
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+<a href="{{it.href}}" style="{{it.style}}">
+<span style="display: flex; align-items: center; gap: 10px"><span style="{{it.dot}}"></span>{{it.label}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #9AA1AC">{{it.badge}}</span>
+</a>
+</sc-for>
+</div>
+</sc-for>
+</nav>
+
+<!-- Main -->
+<main style="display: flex; flex-direction: column; min-width: 0">
+<header style="display: flex; align-items: center; gap: 16px; padding: 14px 28px; background: #FFFFFF; border-bottom: 1px solid #DADDD6; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; flex-grow: 1">
+<span style="font-size: 12px; color: #5B6170">ภาพรวม › Service Value Chain</span>
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">แดชบอร์ดบริหารจัดการบริการ IT</h1>
+</div>
+<label for="q" style="position: absolute; left: -9999px">ค้นหา</label>
+<input id="q" type="search" placeholder="ค้นหา INC, CHG, PRB, CI หรือบทความ KB…" style="width: 340px; max-width: 100%; height: 44px; box-sizing: border-box; border: 1px solid #C9CDC4; border-radius: 8px; padding: 0 14px; font-family: inherit; font-size: 14px; background: #F7F8F5">
+<button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: {{accent}}; color: #fff; font-family: inherit; font-weight: 600; font-size: 14px">+ แจ้งเหตุขัดข้อง</button>
+<button type="button" aria-label="การแจ้งเตือน" style="width: 44px; height: 44px; border: 1px solid #C9CDC4; border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#16191D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+</button>
+<div style="width: 40px; height: 40px; border-radius: 50%; background: #DCE4FB; color: #163A9E; font-weight: 700; display: flex; align-items: center; justify-content: center">สช</div>
+</header>
+
+<div style="padding: 24px 28px 40px; display: flex; flex-direction: column; gap: 20px; max-width: 1400px; box-sizing: border-box; width: 100%">
+
+<!-- KPI tiles -->
+<section class="kpis" aria-label="ตัวชี้วัดหลัก">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="6">
+<div style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #5B6170">{{k.label}}</span>
+<span style="font-size: 30px; font-weight: 700; line-height: 1.1; font-family: 'IBM Plex Mono', monospace; letter-spacing: -0.02em">{{k.value}}</span>
+<span style="{{k.noteStyle}}">{{k.note}}</span>
+<span style="font-size: 11px; color: #5B6170">{{k.practice}}</span>
+</div>
+</sc-for>
+</section>
+
+<!-- Service value chain -->
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap">
+<h2 style="margin: 0; font-size: 17px">ห่วงโซ่คุณค่าบริการ (Service Value Chain)</h2>
+<span style="font-size: 13px; color: #5B6170">งานที่อยู่ระหว่างดำเนินการในแต่ละกิจกรรม · 30 วันล่าสุด</span>
+</div>
+<div class="chain">
+<sc-for list="{{chain}}" as="c" hint-placeholder-count="6">
+<div style="border: 1px solid #DADDD6; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 4px; background: #F7F8F5">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #5B6170">{{c.no}} · {{c.en}}</span>
+<span style="font-weight: 600; font-size: 15px">{{c.th}}</span>
+<span style="font-size: 24px; font-weight: 700; font-family: 'IBM Plex Mono', monospace">{{c.count}}</span>
+<span style="font-size: 12px; color: #5B6170">{{c.what}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<div class="cols">
+<!-- Left column -->
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
+<h2 style="margin: 0; font-size: 17px">คิวเหตุขัดข้อง (Incident Management)</h2>
+<div style="display: flex; gap: 6px; flex-wrap: wrap">
+<button type="button" style="height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid #16191D; background: #16191D; color: #fff; font-family: inherit; font-size: 13px">ทั้งหมด 42</button>
+<button type="button" style="height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit; font-size: 13px">ของฉัน 7</button>
+<button type="button" style="height: 36px; padding: 0 12px; border-radius: 18px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit; font-size: 13px">ใกล้ผิด SLA 5</button>
+</div>
+</div>
+<div class="trow" style="font-size: 12px; color: #5B6170; border-bottom: 1px solid #DADDD6; padding-bottom: 8px">
+<span>เลขที่</span><span>เรื่อง / บริการ</span><span class="hide-s">กลุ่มผู้รับผิดชอบ</span><span>ลำดับความสำคัญ</span><span class="hide-s">สถานะ</span><span class="hide-s">SLA คงเหลือ</span>
+</div>
+<sc-for list="{{incidents}}" as="r" hint-placeholder-count="6">
+<div class="trow" style="font-size: 14px; padding: 6px 0; border-bottom: 1px solid #EEF0EC">
+<a href="Incident.dc.html" style="font-family: 'IBM Plex Mono', monospace; font-size: 13px">{{r.id}}</a>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 500">{{r.title}}</span><span style="font-size: 12px; color: #5B6170">{{r.service}}</span></span>
+<span class="hide-s" style="font-size: 13px">{{r.group}}</span>
+<span style="{{r.pStyle}}">{{r.p}}</span>
+<span class="hide-s" style="font-size: 13px">{{r.status}}</span>
+<span class="hide-s" style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{r.sla}}</span>
+<span style="height: 6px; background: #EEF0EC; border-radius: 3px; overflow: hidden; display: block"><span style="{{r.bar}}"></span></span>
+</span>
+</div>
+</sc-for>
+<a href="#" style="font-size: 14px; align-self: flex-start">ดูเหตุขัดข้องทั้งหมด →</a>
+</section>
+
+<div class="two">
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px">การเปลี่ยนแปลงที่จะเกิดขึ้น</h2>
+<span style="font-size: 12px; color: #5B6170">Change Enablement · Standard / Normal / Emergency</span>
+<sc-for list="{{changes}}" as="c" hint-placeholder-count="4">
+<div style="display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid #EEF0EC">
+<div style="width: 52px; flex-shrink: 0; text-align: center; border: 1px solid #DADDD6; border-radius: 8px; padding: 4px 0">
+<div style="font-size: 11px; color: #5B6170">{{c.mon}}</div>
+<div style="font-size: 18px; font-weight: 700; font-family: 'IBM Plex Mono', monospace">{{c.day}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 3px; min-width: 0">
+<span style="font-weight: 500; font-size: 14px">{{c.title}}</span>
+<span style="font-size: 12px; color: #5B6170"><span style="font-family: 'IBM Plex Mono', monospace">{{c.id}}</span> · {{c.time}} · ความเสี่ยง{{c.risk}}</span>
+<span style="{{c.tStyle}}">{{c.type}}</span>
+</div>
+</div>
+</sc-for>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px">ปัญหาและ Known Error</h2>
+<span style="font-size: 12px; color: #5B6170">Problem Management · ระบุ → ควบคุม → ควบคุมข้อผิดพลาด</span>
+<sc-for list="{{problems}}" as="p" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 10px 0; border-top: 1px solid #EEF0EC">
+<div style="display: flex; justify-content: space-between; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5B6170">{{p.id}}</span>
+<span style="font-size: 12px; font-weight: 600">{{p.phase}}</span>
+</div>
+<span style="font-weight: 500; font-size: 14px">{{p.title}}</span>
+<span style="font-size: 12px; color: #5B6170">เชื่อมโยง {{p.linked}} Incident · {{p.work}}</span>
+</div>
+</sc-for>
+</section>
+</div>
+</div>
+
+<!-- Right column -->
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px">สถานะบริการ</h2>
+<span style="font-size: 12px; color: #5B6170">Monitoring &amp; Event Management · อัปเดต 15:45 น.</span>
+<sc-for list="{{services}}" as="s" hint-placeholder-count="6">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid #EEF0EC">
+<span style="font-size: 14px">{{s.name}}</span>
+<span style="{{s.style}}"><span style="{{s.icon}}"></span>{{s.state}}</span>
+</div>
+</sc-for>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px">เมทริกซ์ลำดับความสำคัญ</h2>
+<span style="font-size: 12px; color: #5B6170">ผลกระทบ (Impact) × ความเร่งด่วน (Urgency) · จำนวน Incident เปิดอยู่</span>
+<div style="display: grid; grid-template-columns: 76px repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 12px">
+<span></span><span style="text-align: center; color: #5B6170">เร่งด่วนสูง</span><span style="text-align: center; color: #5B6170">ปานกลาง</span><span style="text-align: center; color: #5B6170">ต่ำ</span>
+<sc-for list="{{matrix}}" as="m" hint-placeholder-count="3">
+<span style="color: #5B6170; align-self: center">{{m.row}}</span>
+<sc-for list="{{m.cells}}" as="c" hint-placeholder-count="3">
+<div style="{{c.style}}"><span style="font-weight: 600">{{c.p}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 700">{{c.n}}</span></div>
+</sc-for>
+</sc-for>
+</div>
+</section>
+
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px">ผลการดำเนินงานตาม SLA</h2>
+<span style="font-size: 12px; color: #5B6170">Service Level Management · เดือนนี้ · เส้นประ = เป้าหมาย 95%</span>
+<sc-for list="{{sla}}" as="s" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; justify-content: space-between; font-size: 13px"><span>{{s.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">{{s.pct}}%</span></div>
+<div style="position: relative; height: 10px; background: #EEF0EC; border-radius: 5px">
+<div style="{{s.bar}}"></div>
+<div style="position: absolute; left: 95%; top: -3px; bottom: -3px; border-left: 2px dashed #16191D"></div>
+</div>
+</div>
+</sc-for>
+</section>
+
+<section style="background: #16191D; color: #F2F3F0; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 17px">ทะเบียนการปรับปรุงอย่างต่อเนื่อง</h2>
+<span style="font-size: 12px; color: #A9AFB9">Continual Improvement · โมเดล 7 ขั้น</span>
+<sc-for list="{{improve}}" as="i" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-top: 1px solid #343A42">
+<span style="font-weight: 500; font-size: 14px">{{i.title}}</span>
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px">
+<sc-for list="{{i.steps}}" as="st" hint-placeholder-count="7"><span style="{{st}}"></span></sc-for>
+</div>
+<span style="font-size: 12px; color: #A9AFB9">ขั้นที่ {{i.step}}/7 · {{i.stepName}}</span>
+</div>
+</sc-for>
+</section>
+
+</div>
+</div>
+
+<footer style="font-size: 12px; color: #5B6170">ข้อมูลในหน้านี้เป็นข้อมูลตัวอย่างสำหรับการออกแบบ · หลักการชี้นำ ITIL 4: มุ่งเน้นคุณค่า · เริ่มจากจุดที่เป็นอยู่ · ก้าวหน้าแบบวนซ้ำพร้อมรับฟังผล · ร่วมมือและโปร่งใส · คิดและทำงานแบบองค์รวม · เรียบง่ายและใช้งานได้จริง · เพิ่มประสิทธิภาพและทำให้เป็นอัตโนมัติ</footer>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4FD8","options":["#1F4FD8","#0F766E","#6D28D9","#16191D"]},"$preview":{"width":1440,"height":1640}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#1F4FD8';
+    const navItem = (label, badge, active, href) => ({
+      label, badge: badge || '', href: href || '#',
+      style: 'display:flex;align-items:center;justify-content:space-between;min-height:36px;padding:0 10px;border-radius:6px;text-decoration:none;font-size:14px;' + (active ? 'background:#2A2F36;color:#FFFFFF;font-weight:600' : 'color:#D9DCE1'),
+      dot: 'width:6px;height:6px;border-radius:50%;background:' + (active ? accent : '#4A515B')
+    });
+    const nav = [
+      { group: 'ภาพรวม', items: [navItem('แดชบอร์ด', '', true)] },
+      { group: 'ENGAGE · มีส่วนร่วม', items: [navItem('Service Desk', '12'), navItem('พอร์ทัลบริการตนเอง', '', false, 'Portal.dc.html')] },
+      { group: 'DELIVER & SUPPORT · ส่งมอบและสนับสนุน', items: [navItem('Incident Management', '42', false, 'Incident.dc.html'), navItem('Service Request', '118'), navItem('Problem Management', '9'), navItem('Monitoring & Event')] },
+      { group: 'DESIGN & TRANSITION · ออกแบบและเปลี่ยนผ่าน', items: [navItem('Change Enablement', '14'), navItem('Release Management', '3'), navItem('Service Catalogue')] },
+      { group: 'OBTAIN / BUILD · จัดหาและสร้าง', items: [navItem('CMDB / Configuration', '', false, 'CMDB.dc.html'), navItem('IT Asset Management')] },
+      { group: 'PLAN & IMPROVE · วางแผนและปรับปรุง', items: [navItem('Service Level Management'), navItem('Knowledge Management'), navItem('Continual Improvement', '6')] }
+    ];
+    const note = (txt, good) => ({ note: txt, noteStyle: 'font-size:12px;font-weight:600;color:' + (good ? '#0F766E' : '#B54708') });
+    const kpis = [
+      { label: 'Incident เปิดอยู่', value: '42', practice: 'Incident Management', ...note('▲ P1 จำนวน 2 รายการ', false) },
+      { label: 'คำขอบริการรอดำเนินการ', value: '118', practice: 'Service Request', ...note('▼ 9% จากสัปดาห์ก่อน', true) },
+      { label: 'MTTR เฉลี่ย', value: '3.4 ชม.', practice: 'Incident Management', ...note('▼ ดีขึ้น 0.6 ชม.', true) },
+      { label: 'บรรลุ SLA', value: '96.2%', practice: 'Service Level Mgmt', ...note('เป้าหมาย 95%', true) },
+      { label: 'Change สำเร็จ', value: '98.1%', practice: 'Change Enablement', ...note('ล้มเหลว 1 จาก 53', true) },
+      { label: 'ความพึงพอใจ (CSAT)', value: '4.6/5', practice: 'Service Desk', ...note('จาก 812 แบบประเมิน', true) }
+    ];
+    const chain = [
+      { no: '01', en: 'Plan', th: 'วางแผน', count: '4', what: 'แผนงานบริการและงบประมาณ' },
+      { no: '02', en: 'Improve', th: 'ปรับปรุง', count: '6', what: 'รายการปรับปรุงที่ดำเนินการ' },
+      { no: '03', en: 'Engage', th: 'มีส่วนร่วม', count: '1,284', what: 'การติดต่อผู้ใช้เดือนนี้' },
+      { no: '04', en: 'Design & Transition', th: 'ออกแบบและเปลี่ยนผ่าน', count: '14', what: 'Change รออนุมัติ / กำหนดการ' },
+      { no: '05', en: 'Obtain / Build', th: 'จัดหาและสร้าง', count: '3,912', what: 'CI ใน CMDB' },
+      { no: '06', en: 'Deliver & Support', th: 'ส่งมอบและสนับสนุน', count: '160', what: 'Incident + Request เปิดอยู่' }
+    ];
+    const pMap = {
+      P1: ['P1 วิกฤต', '#FDE8E6', '#9A1C12'],
+      P2: ['P2 สูง', '#FDEFD9', '#8A3A06'],
+      P3: ['P3 ปานกลาง', '#E3E9FC', '#163A9E'],
+      P4: ['P4 ต่ำ', '#ECEEEA', '#3D434C']
+    };
+    const chip = (p) => 'display:inline-flex;align-self:center;justify-self:start;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;background:' + pMap[p][1] + ';color:' + pMap[p][2];
+    const inc = (id, title, service, group, p, status, sla, pct) => ({
+      id, title, service, group, p: pMap[p][0], pStyle: chip(p), status, sla,
+      bar: 'display:block;height:6px;border-radius:3px;width:' + pct + '%;background:' + (pct < 25 ? '#B42318' : pct < 50 ? '#C2410C' : '#0F766E')
+    });
+    const incidents = [
+      inc('INC-24817', 'ERP เข้าใช้งานไม่ได้ (สาขาภาคเหนือ)', 'บริการ ERP · Major Incident', 'Application Support', 'P1', 'กำลังวินิจฉัย', '0:42 ชม.', 18),
+      inc('INC-24815', 'VPN ตัดการเชื่อมต่อเป็นระยะ', 'บริการ Remote Access', 'Network Ops', 'P2', 'กำลังดำเนินการ', '2:10 ชม.', 44),
+      inc('INC-24809', 'อีเมลขาออกส่งล่าช้า', 'บริการอีเมลองค์กร', 'Messaging', 'P2', 'รอผู้ขาย', '3:35 ชม.', 61),
+      inc('INC-24802', 'เครื่องพิมพ์ชั้น 7 พิมพ์ไม่ได้', 'บริการงานพิมพ์', 'Desktop Support', 'P3', 'มอบหมายแล้ว', '6:20 ชม.', 72),
+      inc('INC-24796', 'Dashboard BI โหลดช้า', 'บริการ Business Intelligence', 'Data Platform', 'P3', 'รอผู้ใช้ยืนยัน', '9:05 ชม.', 80),
+      inc('INC-24790', 'ไอคอนโปรแกรมหายจากเดสก์ท็อป', 'บริการคอมพิวเตอร์ผู้ใช้', 'Service Desk L1', 'P4', 'ใหม่', '2 วัน', 92)
+    ];
+    const tMap = { Standard: ['#E1F2EF', '#0B5A54'], Normal: ['#E3E9FC', '#163A9E'], Emergency: ['#FDE8E6', '#9A1C12'] };
+    const chg = (id, title, mon, day, time, type, risk) => ({ id, title, mon, day, time, type: type + ' Change', risk,
+      tStyle: 'align-self:flex-start;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;background:' + tMap[type][0] + ';color:' + tMap[type][1] });
+    const changes = [
+      chg('CHG-3381', 'แพตช์ฐานข้อมูล ERP แก้ไข INC-24817', 'ต.ค.', '02', '22:00–23:30', 'Emergency', 'สูง'),
+      chg('CHG-3376', 'อัปเกรดเฟิร์มแวร์ไฟร์วอลล์สาขา', 'ต.ค.', '04', '01:00–03:00', 'Normal', 'ปานกลาง'),
+      chg('CHG-3370', 'เพิ่มผู้ใช้กลุ่มใหม่ใน M365', 'ต.ค.', '05', '10:00', 'Standard', 'ต่ำ'),
+      chg('CHG-3365', 'ย้ายระบบ HR ขึ้นคลาวด์ (เฟส 2)', 'ต.ค.', '09', '20:00–02:00', 'Normal', 'สูง')
+    ];
+    const problems = [
+      { id: 'PRB-0412', phase: 'วิเคราะห์สาเหตุ', title: 'Connection pool ของ ERP เต็มช่วงปิดงวด', linked: 6, work: 'มีวิธีแก้ชั่วคราว' },
+      { id: 'PRB-0409', phase: 'Known Error', title: 'ไคลเอนต์ VPN รุ่น 5.2 หลุดเมื่อสลับเครือข่าย', linked: 14, work: 'บันทึกใน KB-1187' },
+      { id: 'PRB-0401', phase: 'รอ Change', title: 'คิว SMTP relay ล้นเมื่อส่งเกิน 2,000 ฉบับ/นาที', linked: 3, work: 'ผูกกับ CHG-3376' }
+    ];
+    const sMap = {
+      ok: ['ปกติ', '#0B5A54', 'width:8px;height:8px;border-radius:50%;background:#0F766E'],
+      deg: ['เสื่อมประสิทธิภาพ', '#8A3A06', 'width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #C2410C'],
+      down: ['ขัดข้อง', '#9A1C12', 'width:9px;height:9px;background:#B42318']
+    };
+    const svc = (name, s) => ({ name, state: sMap[s][0], icon: sMap[s][2], style: 'display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:' + sMap[s][1] });
+    const services = [svc('ERP', 'down'), svc('Remote Access / VPN', 'deg'), svc('อีเมลองค์กร', 'deg'), svc('Microsoft 365', 'ok'), svc('ระบบ HR', 'ok'), svc('เว็บไซต์ลูกค้า', 'ok')];
+    const cell = (p, n) => ({ p, n, style: 'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:58px;border-radius:6px;background:' + pMap[p][1] + ';color:' + pMap[p][2] });
+    const matrix = [
+      { row: 'ผลกระทบสูง', cells: [cell('P1', 2), cell('P2', 3), cell('P3', 1)] },
+      { row: 'ปานกลาง', cells: [cell('P2', 4), cell('P3', 9), cell('P4', 5)] },
+      { row: 'ต่ำ', cells: [cell('P3', 6), cell('P4', 7), cell('P4', 5)] }
+    ];
+    const slaRow = (name, pct) => ({ name, pct, bar: 'position:absolute;left:0;top:0;bottom:0;border-radius:5px;width:' + pct + '%;background:' + (pct >= 95 ? accent : '#C2410C') });
+    const sla = [slaRow('ERP', 91.4), slaRow('Remote Access', 94.2), slaRow('อีเมลองค์กร', 97.8), slaRow('Microsoft 365', 99.1), slaRow('ระบบ HR', 98.5)];
+    const names = ['วิสัยทัศน์คืออะไร', 'ตอนนี้เราอยู่ที่ไหน', 'อยากไปถึงไหน', 'ไปถึงได้อย่างไร', 'ลงมือทำ', 'ไปถึงหรือยัง', 'รักษาแรงส่งอย่างไร'];
+    const imp = (title, step) => ({ title, step, stepName: names[step - 1],
+      steps: [1,2,3,4,5,6,7].map((n) => 'height:6px;border-radius:3px;background:' + (n <= step ? '#7FA0F5' : '#343A42')) });
+    const improve = [
+      imp('ลด MTTR ของ P2 ลง 20% ด้วย Swarming', 5),
+      imp('Chatbot ตอบคำขอรีเซ็ตรหัสผ่านอัตโนมัติ', 3),
+      imp('รวม CMDB กับระบบสินทรัพย์ (ITAM)', 6)
+    ];
+    return { accent, nav, kpis, chain, incidents, changes, problems, services, matrix, sla, improve };
+  }
+}
+</script>
+</body>
+</html>

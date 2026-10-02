@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CMDB ฐานข้อมูลการจัดการคอนฟิกูเรชัน</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#EEF0EC}
+a{color:#1F4FD8}a:hover{color:#163A9E}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+.body{display:grid;grid-template-columns:232px minmax(0,1fr);gap:16px}
+.detail{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:16px}
+.tiers{display:grid;grid-template-columns:minmax(0,1fr) 28px minmax(0,1fr) 28px minmax(0,1fr) 28px minmax(0,1fr);gap:6px;align-items:center}
+.trow{display:grid;grid-template-columns:96px minmax(0,1.6fr) minmax(0,1fr) 90px 120px minmax(0,1fr) 92px;gap:12px;align-items:center}
+.attrs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:1180px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.detail{grid-template-columns:1fr}}
+@media (max-width:900px){.body{grid-template-columns:1fr}.tiers{grid-template-columns:1fr}.arrow{transform:rotate(90deg);justify-self:center}.trow{grid-template-columns:90px minmax(0,1fr) 110px}.hide-s{display:none}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.attrs{grid-template-columns:1fr}}
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; color: #16191D; background: #EEF0EC; min-height: 100vh">
+
+<header style="display: flex; align-items: center; gap: 16px; padding: 14px 28px; background: #FFFFFF; border-bottom: 1px solid #DADDD6; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; flex-grow: 1">
+<span style="font-size: 12px; color: #5B6170"><a href="Main.dc.html">แดชบอร์ด</a> › Obtain / Build › Service Configuration Management</span>
+<h1 style="margin: 0; font-size: 22px; font-weight: 700">CMDB — ฐานข้อมูลคอนฟิกูเรชัน</h1>
+</div>
+<label for="cq" style="position: absolute; left: -9999px">ค้นหา CI</label>
+<input id="cq" type="search" placeholder="ค้นหาชื่อ CI, IP, Serial, เจ้าของ…" style="width: 320px; max-width: 100%; height: 44px; box-sizing: border-box; border: 1px solid #C9CDC4; border-radius: 8px; padding: 0 14px; font-family: inherit; font-size: 14px; background: #F7F8F5">
+<button type="button" style="height: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit; font-size: 14px">รัน Discovery</button>
+<button type="button" style="height: 44px; padding: 0 18px; border: 0; border-radius: 8px; background: {{accent}}; color: #fff; font-family: inherit; font-weight: 600; font-size: 14px">+ เพิ่ม CI</button>
+</header>
+
+<div style="padding: 24px 28px 40px; max-width: 1400px; box-sizing: border-box; width: 100%; display: flex; flex-direction: column; gap: 16px">
+
+<section class="kpis" aria-label="สุขภาพข้อมูล CMDB">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="6">
+<div style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #5B6170">{{k.label}}</span>
+<span style="font-size: 28px; font-weight: 700; line-height: 1.1; font-family: 'IBM Plex Mono', monospace">{{k.value}}</span>
+<span style="{{k.noteStyle}}">{{k.note}}</span>
+</div>
+</sc-for>
+</section>
+
+<div class="body">
+<!-- Class filter -->
+<aside style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; align-self: start">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 12px; font-weight: 600; color: #5B6170; letter-spacing: 0.04em; padding: 0 8px 6px">คลาสของ CI</span>
+<sc-for list="{{classes}}" as="c" hint-placeholder-count="8">
+<button type="button" style="{{c.style}}"><span>{{c.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{c.n}}</span></button>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #EEF0EC; padding-top: 12px">
+<span style="font-size: 12px; font-weight: 600; color: #5B6170; letter-spacing: 0.04em; padding: 0 8px">สภาพแวดล้อม</span>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 14px; min-height: 32px; padding: 0 8px"><input type="checkbox" checked> Production</label>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 14px; min-height: 32px; padding: 0 8px"><input type="checkbox"> UAT / Test</label>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 14px; min-height: 32px; padding: 0 8px"><input type="checkbox"> Development</label>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #EEF0EC; padding-top: 12px">
+<span style="font-size: 12px; font-weight: 600; color: #5B6170; letter-spacing: 0.04em; padding: 0 8px">สถานะวงจรชีวิต</span>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 14px; min-height: 32px; padding: 0 8px"><input type="checkbox"> วางแผน</label>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 14px; min-height: 32px; padding: 0 8px"><input type="checkbox" checked> ใช้งานจริง</label>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 14px; min-height: 32px; padding: 0 8px"><input type="checkbox" checked> บำรุงรักษา</label>
+<label style="display: flex; gap: 8px; align-items: center; font-size: 14px; min-height: 32px; padding: 0 8px"><input type="checkbox"> ปลดระวาง</label>
+</div>
+</aside>
+
+<div style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+
+<!-- CI table -->
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap">
+<h2 style="margin: 0; font-size: 17px">Configuration Items</h2>
+<span style="font-size: 13px; color: #5B6170">แสดง 8 จาก 1,046 รายการ (Production · ใช้งานจริง + บำรุงรักษา)</span>
+</div>
+<div class="trow" style="font-size: 12px; color: #5B6170; border-bottom: 1px solid #DADDD6; padding-bottom: 8px">
+<span>CI ID</span><span>ชื่อ</span><span class="hide-s">คลาส</span><span class="hide-s">สภาพแวดล้อม</span><span>สถานะ</span><span class="hide-s">เจ้าของ</span><span class="hide-s">ตรวจพบล่าสุด</span>
+</div>
+<sc-for list="{{cis}}" as="r" hint-placeholder-count="8">
+<div class="trow" style="{{r.rowStyle}}">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{r.id}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 500">{{r.name}}</span><span style="{{r.flagStyle}}">{{r.flag}}</span></span>
+<span class="hide-s" style="font-size: 13px">{{r.cls}}</span>
+<span class="hide-s" style="font-size: 13px">{{r.env}}</span>
+<span style="{{r.stStyle}}">{{r.status}}</span>
+<span class="hide-s" style="font-size: 13px">{{r.owner}}</span>
+<span class="hide-s" style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5B6170">{{r.seen}}</span>
+</div>
+</sc-for>
+</section>
+
+<!-- Selected CI -->
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 12px; color: #5B6170"><span style="font-family: 'IBM Plex Mono', monospace">CI-DB-00217</span> · Database · Production</span>
+<h2 style="margin: 0; font-size: 22px">ERP-DB-02</h2>
+<span style="font-size: 14px; color: #5B6170">Oracle Database 19c · โหนดที่ 2 ของคลัสเตอร์ ERP</span>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<span style="padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: #FDE8E6; color: #9A1C12">มี P1 เปิดอยู่</span>
+<span style="padding: 4px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; background: #FDEFD9; color: #8A3A06">Change รอดำเนินการ</span>
+</div>
+</div>
+
+<!-- Relationship map -->
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap">
+<h3 style="margin: 0; font-size: 15px">แผนผังความสัมพันธ์ (Service Model)</h3>
+<span style="font-size: 12px; color: #5B6170">ลูกศร = “ขึ้นอยู่กับ” · กรอบเข้ม = CI ที่เลือก · กรอบแดง = ได้รับผลกระทบ</span>
+</div>
+<div class="tiers" style="background: #F7F8F5; border-radius: 10px; padding: 16px">
+<sc-for list="{{tiers}}" as="t" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<span style="font-size: 11px; font-weight: 600; color: #5B6170; letter-spacing: 0.04em">{{t.label}}</span>
+<sc-for list="{{t.nodes}}" as="n" hint-placeholder-count="2">
+<div style="{{n.style}}">
+<span style="font-size: 13px; font-weight: 600">{{n.name}}</span>
+<span style="font-size: 11px; color: #5B6170">{{n.sub}}</span>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{t.arrow}}" hint-placeholder-val="{{ true }}">
+<span class="arrow" aria-hidden="true" style="font-size: 20px; color: #5B6170; text-align: center">→</span>
+</sc-if>
+</sc-for>
+</div>
+</div>
+
+<div class="detail">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-size: 15px">คุณลักษณะ (Attributes)</h3>
+<div class="attrs">
+<sc-for list="{{attrs}}" as="a" hint-placeholder-count="10">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 12px; background: #F7F8F5; border-radius: 8px">
+<span style="font-size: 12px; color: #5B6170">{{a.k}}</span>
+<span style="font-size: 14px; font-weight: 500">{{a.v}}</span>
+</div>
+</sc-for>
+</div>
+<h3 style="margin: 8px 0 0; font-size: 15px">ประวัติการเปลี่ยนแปลงคอนฟิกูเรชัน</h3>
+<sc-for list="{{history}}" as="h" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; padding: 8px 0; border-top: 1px solid #EEF0EC; font-size: 13px">
+<span style="font-family: 'IBM Plex Mono', monospace; color: #5B6170">{{h.date}}</span>
+<span><span style="font-weight: 600">{{h.what}}</span> <span style="color: #5B6170">· {{h.src}}</span></span>
+</div>
+</sc-for>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 12px">
+<div style="background: #16191D; color: #F2F3F0; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<h3 style="margin: 0; font-size: 15px">วิเคราะห์ผลกระทบ (Impact Analysis)</h3>
+<span style="font-size: 12px; color: #A9AFB9">ถ้า CI นี้หยุดทำงาน จะกระทบ</span>
+<sc-for list="{{impact}}" as="i" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-top: 1px solid #343A42; font-size: 14px">
+<span>{{i.k}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">{{i.v}}</span>
+</div>
+</sc-for>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<h3 style="margin: 0; font-size: 15px">รายการที่เชื่อมกับ CI นี้</h3>
+<a href="Incident.dc.html" style="font-size: 14px">INC-24817 · ERP เข้าใช้งานไม่ได้ (P1)</a>
+<a href="#" style="font-size: 14px">PRB-0412 · Connection pool เต็มช่วงปิดงวด</a>
+<a href="#" style="font-size: 14px">CHG-3381 · Emergency Change รอ ECAB</a>
+<a href="#" style="font-size: 14px">KB-0932 · รีสตาร์ต Connection Pool ของ ERP</a>
+<a href="#" style="font-size: 14px">ASSET-SRV-0891 · สินทรัพย์ (ITAM) · สัญญา MA ถึง มี.ค. 2570</a>
+</div>
+</div>
+</div>
+</section>
+
+<!-- Data quality -->
+<section style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap">
+<h2 style="margin: 0; font-size: 17px">งานตรวจสอบและรักษาคุณภาพข้อมูล</h2>
+<span style="font-size: 12px; color: #5B6170">Verification &amp; Audit · ข้อมูลต้องถูกต้องพอสำหรับการตัดสินใจ ไม่ต้องสมบูรณ์แบบ</span>
+</div>
+<sc-for list="{{quality}}" as="q" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #EEF0EC; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 14px; font-weight: 500">{{q.title}}</span>
+<span style="font-size: 12px; color: #5B6170">{{q.desc}}</span>
+</div>
+<div style="display: flex; gap: 10px; align-items: center">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 700">{{q.n}}</span>
+<button type="button" style="height: 36px; padding: 0 14px; border-radius: 8px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit; font-size: 13px">{{q.action}}</button>
+</div>
+</div>
+</sc-for>
+</section>
+
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4FD8","options":["#1F4FD8","#0F766E","#6D28D9","#16191D"]},"$preview":{"width":1440,"height":1720}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#1F4FD8';
+    const note = (txt, good) => ({ note: txt, noteStyle: 'font-size:12px;font-weight:600;color:' + (good ? '#0B5A54' : '#8A3A06') });
+    const kpis = [
+      { label: 'CI ทั้งหมด', value: '3,912', ...note('▲ 42 จาก Discovery เมื่อคืน', true) },
+      { label: 'ความสัมพันธ์', value: '11,480', ...note('เฉลี่ย 2.9 ต่อ CI', true) },
+      { label: 'ความถูกต้องจากการตรวจสอบ', value: '97.4%', ...note('เป้าหมาย 95%', true) },
+      { label: 'CI ไม่มีเจ้าของ', value: '46', ...note('ต้องระบุเจ้าของ', false) },
+      { label: 'ไม่ได้ยืนยัน > 90 วัน', value: '128', ...note('รอตรวจสอบ', false) },
+      { label: 'ความครอบคลุมของบริการ', value: '58/64', ...note('บริการที่มี Service Model', true) }
+    ];
+    const cls = (name, n, active) => ({ name, n,
+      style: 'display:flex;justify-content:space-between;align-items:center;min-height:38px;padding:0 10px;border:0;border-radius:6px;font-family:inherit;font-size:14px;text-align:left;' + (active ? 'background:#16191D;color:#FFFFFF;font-weight:600' : 'background:transparent;color:#16191D') });
+    const classes = [
+      cls('ทั้งหมด', '3,912', true), cls('Business Service', '64'), cls('Application', '212'), cls('Server (Virtual/Physical)', '684'),
+      cls('Database', '97'), cls('Network Device', '431'), cls('Cloud Resource', '388'), cls('End-user Device', '1,936'), cls('Software License', '100')
+    ];
+    const stMap = { live: ['ใช้งานจริง', '#E1F2EF', '#0B5A54'], maint: ['บำรุงรักษา', '#FDEFD9', '#8A3A06'], plan: ['วางแผน', '#E3E9FC', '#163A9E'], retire: ['ปลดระวาง', '#ECEEEA', '#3D434C'] };
+    const ci = (id, name, cls, env, st, owner, seen, flag, sel) => ({ id, name, cls, env, owner, seen, flag: flag || '',
+      status: stMap[st][0],
+      stStyle: 'justify-self:start;padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600;background:' + stMap[st][1] + ';color:' + stMap[st][2],
+      flagStyle: 'font-size:12px;color:' + (flag && flag.indexOf('P1') >= 0 ? '#9A1C12' : '#5B6170'),
+      rowStyle: 'font-size:14px;padding:8px;margin:0 -8px;border-radius:6px;border-bottom:1px solid #EEF0EC;' + (sel ? 'background:#E3E9FC;box-shadow:inset 3px 0 0 ' + accent : '') });
+    const cis = [
+      ci('CI-SVC-0003', 'ERP Production', 'Business Service', 'Prod', 'live', 'ฝ่ายบัญชีและการเงิน', '—', 'ได้รับผลกระทบจาก INC-24817 (P1)'),
+      ci('CI-APP-0041', 'ERP-APP-01', 'Application Server', 'Prod', 'live', 'Application Support', '02/10 03:00'),
+      ci('CI-DB-00217', 'ERP-DB-02', 'Database', 'Prod', 'live', 'DBA Team', '02/10 03:00', 'INC-24817 (P1) · CHG-3381', true),
+      ci('CI-DB-00216', 'ERP-DB-01', 'Database', 'Prod', 'live', 'DBA Team', '02/10 03:00'),
+      ci('CI-NET-0388', 'FW-North-01', 'Network Device', 'Prod', 'maint', 'Network Ops', '02/10 03:00', 'CHG-3376 วันที่ 4 ต.ค.'),
+      ci('CI-NET-0412', 'WAN-North-Link', 'Network Link', 'Prod', 'live', 'Network Ops', '02/10 03:00'),
+      ci('CI-CLD-1120', 'hr-app-prod (AKS)', 'Cloud Resource', 'Prod', 'plan', 'HRIS Team', '01/10 22:00', 'ย้ายขึ้นคลาวด์ CHG-3365'),
+      ci('CI-SRV-0207', 'ERP-REPORT-OLD', 'Server', 'Prod', 'retire', '— ไม่มีเจ้าของ', '14/06 03:00', 'ไม่พบใน Discovery 110 วัน')
+    ];
+    const node = (name, sub, kind) => ({ name, sub,
+      style: 'display:flex;flex-direction:column;gap:2px;padding:10px 12px;border-radius:8px;background:#FFFFFF;' +
+        (kind === 'sel' ? 'border:2px solid #16191D;box-shadow:0 0 0 3px ' + accent + '33' : kind === 'hit' ? 'border:1px solid #E8A39B;background:#FDF3F2' : 'border:1px solid #DADDD6') });
+    const tiers = [
+      { label: 'BUSINESS SERVICE', arrow: true, nodes: [node('ERP Production', '340 ผู้ใช้ · SLA 99.5%', 'hit'), node('รายงานผู้บริหาร (BI)', 'อ่านข้อมูลจาก ERP', 'hit')] },
+      { label: 'APPLICATION', arrow: true, nodes: [node('ERP-APP-01', 'App Server · Linux', 'hit'), node('ERP-APP-02', 'App Server · Linux', 'hit')] },
+      { label: 'DATA / PLATFORM', arrow: true, nodes: [node('ERP-DB-02', 'Oracle 19c · RAC node 2', 'sel'), node('ERP-DB-01', 'Oracle 19c · RAC node 1', '')] },
+      { label: 'INFRASTRUCTURE', arrow: false, nodes: [node('VMH-DC1-07', 'ESXi Host · DC1', ''), node('SAN-DC1-A', 'Storage · 42 TB', '')] }
+    ];
+    const attrs = [
+      { k: 'IP Address', v: '10.20.4.17' }, { k: 'เวอร์ชัน', v: 'Oracle 19.21 (RU ม.ค. 2569)' },
+      { k: 'เจ้าของ CI', v: 'DBA Team · สมชาย ก.' }, { k: 'เจ้าของบริการ', v: 'ฝ่ายบัญชีและการเงิน' },
+      { k: 'ความสำคัญทางธุรกิจ', v: 'Tier 1 — สำคัญยิ่ง' }, { k: 'ที่ตั้ง', v: 'Data Center 1 · Rack C-12' },
+      { k: 'ช่วงบำรุงรักษา', v: 'อา. 01:00–05:00 น.' }, { k: 'แหล่งข้อมูล', v: 'Discovery + ยืนยันด้วยมือ' },
+      { k: 'ยืนยันล่าสุด', v: '18 ก.ย. 2569' }, { k: 'สินทรัพย์ที่ผูก (ITAM)', v: 'ASSET-SRV-0891' }
+    ];
+    const history = [
+      { date: '02/10/69', what: 'ปรับ processes 1500 → 2000 (รอ)', src: 'CHG-3381' },
+      { date: '14/09/69', what: 'เพิ่ม RAM 256 → 384 GB', src: 'CHG-3288 · Discovery ยืนยัน' },
+      { date: '21/01/69', what: 'อัปเดต Release Update 19.21', src: 'CHG-2950' },
+      { date: '05/11/68', what: 'เปลี่ยนเจ้าของ CI เป็น DBA Team', src: 'แก้ไขโดย สมชาย ก.' }
+    ];
+    const impact = [
+      { k: 'Business Service', v: '2' }, { k: 'Application CI', v: '4' }, { k: 'ผู้ใช้ที่ได้รับผลกระทบ', v: '≈ 340' }, { k: 'SLA ที่เกี่ยวข้อง', v: 'ERP 99.5%' }
+    ];
+    const quality = [
+      { title: 'CI ไม่มีเจ้าของ', desc: 'ทุก CI ต้องมีผู้รับผิดชอบเพื่อการอนุมัติ Change และการแก้ Incident', n: '46', action: 'มอบหมายเจ้าของ' },
+      { title: 'ไม่พบใน Discovery เกิน 90 วัน', desc: 'อาจปลดระวางแล้วแต่ยังไม่อัปเดตสถานะ', n: '128', action: 'ตรวจสอบ' },
+      { title: 'ข้อมูลไม่ตรงกับ Discovery', desc: 'คุณลักษณะต่างจากที่สแกนพบ อาจมีการเปลี่ยนแปลงที่ไม่ได้ผ่าน Change', n: '17', action: 'กระทบยอด' },
+      { title: 'Business Service ที่ยังไม่มี Service Model', desc: 'ยังไม่ได้ผูกความสัมพันธ์ไปยัง Application และโครงสร้างพื้นฐาน', n: '6', action: 'สร้างแผนผัง' }
+    ];
+    return { accent, kpis, classes, cis, tiers, attrs, history, impact, quality };
+  }
+}
+</script>
+</body>
+</html>

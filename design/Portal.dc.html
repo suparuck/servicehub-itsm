@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>พอร์ทัลบริการ IT</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F7F8F5}
+a{color:#1F4FD8}a:hover{color:#163A9E}
+.quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.cat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:20px}
+@media (max-width:1000px){.cols{grid-template-columns:1fr}.cat{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.quick{grid-template-columns:repeat(2,minmax(0,1fr))}.cat{grid-template-columns:1fr}}
+</style>
+</helmet>
+<div style="font-family: 'IBM Plex Sans Thai', system-ui, sans-serif; color: #16191D; background: #F7F8F5; min-height: 100vh">
+
+<header style="display: flex; align-items: center; gap: 16px; padding: 14px 32px; background: #FFFFFF; border-bottom: 1px solid #DADDD6; flex-wrap: wrap">
+<span style="font-weight: 700; font-size: 18px">ServiceHub <span style="font-weight: 400; color: #5B6170">· บริการ IT</span></span>
+<span style="flex-grow: 1"></span>
+<nav aria-label="เมนูพอร์ทัล" style="display: flex; gap: 4px; flex-wrap: wrap">
+<a href="#" style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; font-size: 14px; color: #16191D; font-weight: 600; text-decoration: none">หน้าแรก</a>
+<a href="#" style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; font-size: 14px; color: #16191D; text-decoration: none">แคตตาล็อกบริการ</a>
+<a href="#" style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; font-size: 14px; color: #16191D; text-decoration: none">คลังความรู้</a>
+<a href="#" style="min-height: 44px; display: flex; align-items: center; padding: 0 12px; font-size: 14px; color: #16191D; text-decoration: none">รายการของฉัน</a>
+</nav>
+<div style="width: 40px; height: 40px; border-radius: 50%; background: #DCE4FB; color: #163A9E; font-weight: 700; display: flex; align-items: center; justify-content: center">มก</div>
+</header>
+
+<section style="background: #16191D; color: #fff; padding: 48px 32px 56px">
+<div style="max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px">
+<span style="font-size: 14px; color: #A9AFB9">สวัสดีคุณมณีรัตน์</span>
+<h1 style="margin: 0; font-size: 40px; line-height: 1.25; font-weight: 700">ต้องการความช่วยเหลือเรื่องอะไร?</h1>
+<div style="display: flex; gap: 8px; flex-wrap: wrap">
+<label for="ps" style="position: absolute; left: -9999px">ค้นหาบริการหรือบทความ</label>
+<input id="ps" type="search" placeholder="เช่น ลืมรหัสผ่าน, ขอโน้ตบุ๊กใหม่, VPN ใช้ไม่ได้" style="flex-grow: 1; min-width: 240px; height: 56px; box-sizing: border-box; border: 0; border-radius: 10px; padding: 0 18px; font-family: inherit; font-size: 16px">
+<button type="button" style="height: 56px; padding: 0 26px; border: 0; border-radius: 10px; background: {{accent}}; color: #fff; font-family: inherit; font-weight: 600; font-size: 16px">ค้นหา</button>
+</div>
+<div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 14px; color: #D9DCE1">
+<span style="width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 10px solid #F59E0B"></span>
+<span>ขณะนี้ระบบ ERP สาขาภาคเหนือขัดข้อง ทีมกำลังแก้ไข · อัปเดตถัดไป 16:00 น.</span>
+<a href="#" style="color: #C9D5FB">ดูสถานะบริการ</a>
+</div>
+</div>
+</section>
+
+<div style="max-width: 1120px; margin: -28px auto 0; padding: 0 32px 48px; display: flex; flex-direction: column; gap: 32px">
+
+<div class="quick">
+<sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
+<a href="#" style="display: flex; flex-direction: column; gap: 8px; padding: 18px; background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 12px; text-decoration: none; color: #16191D">
+<span style="width: 40px; height: 40px; border-radius: 10px; background: #E3E9FC; display: flex; align-items: center; justify-content: center">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#163A9E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{q.icon}}"></path></svg>
+</span>
+<span style="font-weight: 600; font-size: 16px">{{q.title}}</span>
+<span style="font-size: 13px; color: #5B6170; line-height: 1.5">{{q.desc}}</span>
+<span style="font-size: 11px; color: #5B6170; font-family: 'IBM Plex Mono', monospace">{{q.practice}}</span>
+</a>
+</sc-for>
+</div>
+
+<div class="cols">
+<section style="display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px">
+<h2 style="margin: 0; font-size: 20px">แคตตาล็อกบริการ</h2>
+<a href="#" style="font-size: 14px">ดูทั้งหมด 64 รายการ →</a>
+</div>
+<div class="cat">
+<sc-for list="{{cats}}" as="c" hint-placeholder-count="6">
+<a href="#" style="display: flex; flex-direction: column; gap: 6px; padding: 16px; background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; text-decoration: none; color: #16191D">
+<span style="font-weight: 600; font-size: 15px">{{c.name}}</span>
+<span style="font-size: 13px; color: #5B6170; line-height: 1.5">{{c.items}}</span>
+<span style="font-size: 12px; color: #0B5A54; font-weight: 600">{{c.sla}}</span>
+</a>
+</sc-for>
+</div>
+
+<h2 style="margin: 16px 0 0; font-size: 20px">บทความยอดนิยม</h2>
+<div style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 4px 16px">
+<sc-for list="{{kb}}" as="k" hint-placeholder-count="4">
+<a href="#" style="display: flex; justify-content: space-between; gap: 10px; padding: 12px 0; border-bottom: 1px solid #EEF0EC; text-decoration: none; color: #16191D; font-size: 14px">
+<span>{{k.title}}</span><span style="color: #5B6170; font-size: 12px; white-space: nowrap">{{k.views}}</span>
+</a>
+</sc-for>
+</div>
+</section>
+
+<aside style="display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 20px">รายการของฉัน</h2>
+<sc-for list="{{mine}}" as="m" hint-placeholder-count="3">
+<div style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #5B6170">{{m.id}}</span>
+<span style="font-size: 12px; font-weight: 600">{{m.state}}</span>
+</div>
+<span style="font-weight: 600; font-size: 15px">{{m.title}}</span>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px">
+<sc-for list="{{m.bars}}" as="b" hint-placeholder-count="4"><span style="{{b}}"></span></sc-for>
+</div>
+<span style="font-size: 12px; color: #5B6170">{{m.next}}</span>
+</div>
+</sc-for>
+
+<div style="background: #FFFFFF; border: 1px solid #DADDD6; border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<span style="font-weight: 600; font-size: 15px">ประเมินบริการล่าสุด</span>
+<span style="font-size: 13px; color: #5B6170">REQ-10233 · ติดตั้งโปรแกรม Adobe Acrobat · ปิดเมื่อวาน</span>
+<div role="group" aria-label="ให้คะแนน 1 ถึง 5" style="display: flex; gap: 6px">
+<button type="button" aria-label="1 คะแนน" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit">1</button>
+<button type="button" aria-label="2 คะแนน" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit">2</button>
+<button type="button" aria-label="3 คะแนน" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit">3</button>
+<button type="button" aria-label="4 คะแนน" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit">4</button>
+<button type="button" aria-label="5 คะแนน" style="width: 44px; height: 44px; border-radius: 8px; border: 1px solid #C9CDC4; background: #fff; font-family: inherit">5</button>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#1F4FD8","options":["#1F4FD8","#0F766E","#6D28D9","#16191D"]},"$preview":{"width":1440,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const accent = this.props.accent ?? '#1F4FD8';
+    const quick = [
+      { title: 'แจ้งปัญหาการใช้งาน', desc: 'สิ่งที่เคยใช้ได้แต่ตอนนี้ใช้ไม่ได้หรือช้าผิดปกติ', practice: 'Incident Management', icon: 'M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' },
+      { title: 'ขอรับบริการ', desc: 'ขออุปกรณ์ ซอฟต์แวร์ หรือบริการใหม่จากแคตตาล็อก', practice: 'Service Request', icon: 'M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0' },
+      { title: 'ขอสิทธิ์เข้าถึง', desc: 'สิทธิ์ระบบ โฟลเดอร์แชร์ หรือกลุ่มอีเมล', practice: 'Access via Request', icon: 'M19 11H5a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2zM7 11V7a5 5 0 0 1 10 0v4' },
+      { title: 'ค้นหาวิธีแก้ด้วยตนเอง', desc: 'คู่มือและคำตอบจากทีม IT พร้อมใช้ 24 ชั่วโมง', practice: 'Knowledge Management', icon: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15zM20 17v5H6.5A2.5 2.5 0 0 1 4 19.5' }
+    ];
+    const cats = [
+      { name: 'อุปกรณ์และคอมพิวเตอร์', items: 'โน้ตบุ๊ก จอภาพ อุปกรณ์ต่อพ่วง', sla: 'ส่งมอบภายใน 3 วันทำการ' },
+      { name: 'บัญชีผู้ใช้และรหัสผ่าน', items: 'รีเซ็ตรหัสผ่าน MFA บัญชีใหม่', sla: 'อัตโนมัติ · ทันที' },
+      { name: 'ซอฟต์แวร์และไลเซนส์', items: 'ติดตั้งโปรแกรม ต่ออายุไลเซนส์', sla: 'ภายใน 1 วันทำการ' },
+      { name: 'เครือข่ายและ VPN', items: 'Wi-Fi ผู้เยี่ยมชม VPN พอร์ตเครือข่าย', sla: 'ภายใน 1 วันทำการ' },
+      { name: 'อีเมลและการทำงานร่วมกัน', items: 'กล่องจดหมายกลาง Teams SharePoint', sla: 'ภายใน 4 ชั่วโมงทำการ' },
+      { name: 'พนักงานเข้าใหม่ / ลาออก', items: 'ชุดบริการ Onboarding / Offboarding', sla: 'ล่วงหน้า 5 วันทำการ' }
+    ];
+    const kb = [
+      { title: 'ตั้งค่า MFA บนโทรศัพท์เครื่องใหม่', views: '2,410 ครั้ง' },
+      { title: 'VPN หลุดบ่อยเมื่อสลับ Wi-Fi — วิธีแก้ชั่วคราว', views: '1,876 ครั้ง' },
+      { title: 'เชื่อมต่อเครื่องพิมพ์สำนักงานใหม่', views: '1,302 ครั้ง' },
+      { title: 'กู้คืนไฟล์ที่ลบจาก OneDrive', views: '988 ครั้ง' }
+    ];
+    const bars = (n) => [1,2,3,4].map((i) => 'height:6px;border-radius:3px;background:' + (i <= n ? accent : '#DADDD6'));
+    const mine = [
+      { id: 'REQ-10291', state: 'กำลังจัดเตรียม', title: 'ขอโน้ตบุ๊กใหม่ (เปลี่ยนเครื่องตามรอบ)', bars: bars(3), next: 'ส่ง → อนุมัติ → จัดเตรียม → ส่งมอบ · คาดว่าได้รับ 6 ต.ค.' },
+      { id: 'INC-24811', state: 'รอข้อมูลจากคุณ', title: 'Outlook ไม่ซิงก์ปฏิทิน', bars: bars(2), next: 'ทีม IT ขอภาพหน้าจอข้อความผิดพลาด' },
+      { id: 'REQ-10288', state: 'รออนุมัติ', title: 'ขอสิทธิ์โฟลเดอร์ฝ่ายการเงิน', bars: bars(1), next: 'รอหัวหน้าฝ่ายการเงินอนุมัติ' }
+    ];
+    return { accent, quick, cats, kb, mine };
+  }
+}
+</script>
+</body>
+</html>
