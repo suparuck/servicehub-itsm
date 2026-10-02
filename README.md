@@ -31,4 +31,4 @@ docker compose up --build
 | `docker compose exec web npx vitest run` | รัน unit test |
 | `docker compose down -v` | หยุดและลบข้อมูลฐานข้อมูล |
 
-ความคืบหน้า: เฟส 1–3 เสร็จ (scaffold, schema + seed, แดชบอร์ด `/`) — หน้าอื่นยังเป็น placeholder
+ความคืบหน้า: เฟส 1–4 เสร็จ (scaffold, schema + seed, แดชบอร์ด `/`, Incident: รายการ รายละเอียด สร้าง/แก้ไข SLA timer work notes) — หน้าอื่นยังเป็น placeholder

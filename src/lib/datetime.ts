@@ -33,3 +33,7 @@ export function startOfTodayBangkok(now = new Date()): Date {
   const ymd = new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(now); // YYYY-MM-DD
   return new Date(`${ymd}T00:00:00+07:00`);
 }
+
+const dateLong = fmt({ day: 'numeric', month: 'short', year: 'numeric' });
+/** 2 ต.ค. 2569 14:58 น. */
+export const thDateTime = (d: Date) => `${dateLong.format(d)} ${thTime(d)} น.`;
