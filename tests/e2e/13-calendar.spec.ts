@@ -60,11 +60,13 @@ test.describe('ปฏิทิน Change & Problem', () => {
     const mine = page.url().split('/').pop()!;
 
     await page.goto(`/calendar?month=${when.slice(0, 7)}`);
-    await expect(agenda(page).filter({ hasText: mine })).toContainText('ชนกับ');
-    await expect(agenda(page).filter({ hasText: mine })).toContainText('CHG-3376');
-    const seeded = agenda(page).filter({ hasText: 'CHG-3376' });
-    await expect(seeded).toContainText(`ชนกับ`);
-    await expect(seeded).toContainText(mine);
+    // เลือกแถวด้วยลิงก์เลขที่เอกสารของแถวนั้นเอง (ข้อความ "ชนกับ CHG-xxxx" ของอีกแถวมีเลขนี้ด้วย)
+    const rowOf = (no: string) => agenda(page).filter({ has: page.getByRole('link', { name: no, exact: true }) });
+    await expect(rowOf(mine)).toContainText('ชนกับ');
+    await expect(rowOf(mine)).toContainText('CHG-3376');
+    await expect(rowOf('CHG-3376')).toContainText('ชนกับ');
+    await expect(rowOf('CHG-3376')).toContainText(mine);
+    await expect(rowOf('CHG-3381')).not.toContainText('ชนกับ'); // งานที่ไม่ทับ ไม่ถูกติดป้าย
   });
 
   test('ตั้งกำหนดแก้ไขของ Problem ในหน้ารายละเอียด → ขึ้นในปฏิทินวันนั้น; ล้างค่าแล้วหายไป', async ({ page }) => {
