@@ -468,8 +468,18 @@ async function main() {
   });
 
   // ── Continual Improvement ──────────────────────────────────────
-  const imps: [string, number][] = [['ลด MTTR ของ P2 ลง 20% ด้วย Swarming', 5], ['Chatbot ตอบคำขอรีเซ็ตรหัสผ่านอัตโนมัติ', 3], ['รวม CMDB กับระบบสินทรัพย์ (ITAM)', 6]];
-  for (const [i, [title, step]] of imps.entries()) await prisma.improvementItem.create({ data: { title, step, sortOrder: i } });
+  const imps = [
+    { title: 'ลด MTTR ของ P2 ลง 20% ด้วย Swarming', step: 5, benefit: 'HIGH' as const, owner: wanna, problemId: prb412.id, serviceId: svc.ERP, due: bkk(30, '00:00'),
+      description: 'Incident P2 ที่ต้องส่งต่อหลายทีมใช้เวลานาน กระทบความพึงพอใจของผู้ใช้ จึงจัดทีมรุมแก้ (swarming) ตั้งแต่ชั่วโมงแรก',
+      baseline: 'MTTR ของ P2 เฉลี่ย 6.0 ชม. (30 วันล่าสุด)', goal: 'MTTR ของ P2 เฉลี่ยไม่เกิน 4.8 ชม. (ลด 20%) ภายใน 30 วัน' },
+    { title: 'Chatbot ตอบคำขอรีเซ็ตรหัสผ่านอัตโนมัติ', step: 3, benefit: 'MED' as const, owner: thanaphon, problemId: null, serviceId: svc.M365, due: bkk(-5, '00:00'),
+      description: 'คำขอรีเซ็ตรหัสผ่านเป็นงานซ้ำจำนวนมากของ Service Desk', baseline: 'ปัจจุบันมีคำขอรีเซ็ตรหัสผ่านราว 140 รายการ/เดือน ใช้เวลาเฉลี่ย 12 นาที/รายการ', goal: null },
+    { title: 'รวม CMDB กับระบบสินทรัพย์ (ITAM)', step: 6, benefit: 'MED' as const, owner: somchai, problemId: null, serviceId: null, due: bkk(14, '00:00'),
+      description: 'ข้อมูลสินทรัพย์และ CI แยกกัน ทำให้ตรวจนับไม่ตรง', baseline: 'CI ฮาร์ดแวร์ 12 รายการ มีสินทรัพย์ผูกเพียง 1 รายการ', goal: 'CI ฮาร์ดแวร์/ไลเซนส์ทุกรายการมีสินทรัพย์ผูกครบ 100%', result: null },
+  ];
+  for (const [i, m] of imps.entries()) {
+    await prisma.improvementItem.create({ data: { title: m.title, step: m.step, sortOrder: i, benefit: m.benefit, ownerId: m.owner, problemId: m.problemId, serviceId: m.serviceId, targetDate: m.due, description: m.description, baseline: m.baseline, goal: m.goal, result: 'result' in m ? m.result : null } });
+  }
 
   // ── ตัวเลขรวมที่ดีไซน์ระบุแต่ไม่มีรายการรองรับ ──────────────────
   await prisma.dashboardSnapshot.create({

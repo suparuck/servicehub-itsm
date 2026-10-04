@@ -35,7 +35,7 @@ export async function getDashboard(filter: QueueFilter, userId?: string) {
       include: { _count: { select: { incidents: true } } },
     }),
     db.service.findMany({ orderBy: { sortOrder: 'asc' }, take: 6 }),
-    db.improvementItem.findMany({ orderBy: { sortOrder: 'asc' } }),
+    db.improvementItem.findMany({ where: { status: 'OPEN' }, orderBy: { sortOrder: 'asc' } }),
     db.configurationItem.count({ where: { lifecycle: { not: 'RETIRED' } } }),
     getSlaReport(30),
     db.service.findMany({ orderBy: { sortOrder: 'asc' }, select: { name: true } }),

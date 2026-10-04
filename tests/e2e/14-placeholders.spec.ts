@@ -5,7 +5,6 @@ const PAGES = [
   { path: '/service-desk', title: 'Service Desk', group: 'ENGAGE', practice: 'Service Desk', related: 'Incident Management' },
   { path: '/monitoring', title: 'Monitoring & Event', group: 'DELIVER & SUPPORT', practice: 'Monitoring and Event Management', related: 'CMDB / Configuration' },
   { path: '/releases', title: 'Release Management', group: 'DESIGN & TRANSITION', practice: 'Release Management', related: 'Change Enablement' },
-  { path: '/improvement', title: 'Continual Improvement', group: 'PLAN & IMPROVE', practice: 'Continual Improvement', related: 'Problem Management' },
 ] as const;
 
 test.describe('หน้าโมดูลที่ยังไม่พัฒนา', () => {
@@ -36,7 +35,7 @@ test.describe('หน้าโมดูลที่ยังไม่พัฒ�
   });
 
   test('พาธย่อยหรือพาธนอกเมนูเป็น 404 (ไม่ตอบเป็นหน้าโมดูลหลอก)', async ({ page }) => {
-    for (const p of ['/releases/REL-1', '/ไม่มีหน้านี้', '/monitoring/events', '/improvement/x']) {
+    for (const p of ['/releases/REL-1', '/ไม่มีหน้านี้', '/monitoring/events', '/releases/x/y']) {
       expect((await page.goto(p))?.status(), p).toBe(404);
     }
   });

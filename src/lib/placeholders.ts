@@ -42,17 +42,6 @@ export const PLACEHOLDERS: PlaceholderInfo[] = [
       { label: 'ปฏิทิน Change & Problem', href: '/calendar', note: 'ดูช่วงดำเนินการและ Change ที่ชนกัน (ใช้งานได้แล้ว)' },
     ],
   },
-  {
-    href: '/improvement',
-    practice: 'Continual Improvement',
-    summary: 'ทะเบียนรายการปรับปรุงและการติดตามผลตามโมเดลการปรับปรุง 7 ขั้นของ ITIL 4',
-    planned: ['ทะเบียนรายการปรับปรุงพร้อมเจ้าของและกำหนดเสร็จ', 'ติดตามขั้นตอน 1–7 ของโมเดลปรับปรุง', 'ผูกกับ Problem, SLA และผลสำรวจความพึงพอใจ', 'รายงานความคืบหน้าและผลลัพธ์'],
-    related: [
-      { label: 'แดชบอร์ด', href: '/', note: 'สรุปทะเบียนการปรับปรุงเบื้องต้นอยู่ที่แดชบอร์ด' },
-      { label: 'Problem Management', href: '/problems', note: 'ปัญหาเรื้อรังที่เป็นต้นเรื่องของการปรับปรุง (ใช้งานได้แล้ว)' },
-      { label: 'Service Level Management', href: '/sla', note: 'ตัวชี้วัดที่ใช้ตั้งเป้าหมาย (ใช้งานได้แล้ว)' },
-    ],
-  },
 ];
 
 export const placeholderFor = (path: string) => PLACEHOLDERS.find((p) => path === p.href || path.startsWith(`${p.href}/`));

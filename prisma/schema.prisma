@@ -172,6 +172,7 @@ model User {
   auditLogs         AuditLog[]
   notifications     Notification[]
   assetsHeld        Asset[]              @relation("AssetAssignee")
+  improvementsOwned ImprovementItem[]    @relation("ImprovementOwner")
   resetTokens       PasswordResetToken[]
   changesRequested  Change[]             @relation("ChangeRequester")
 }
@@ -200,6 +201,7 @@ model Service {
   incidents    Incident[]
   changes      Change[]
   catalogItems CatalogItem[]
+  improvements ImprovementItem[]
 }
 
 model ServiceOffering {
@@ -397,7 +399,7 @@ model CatalogItem {
   serviceId String?
   service   Service?         @relation(fields: [serviceId], references: [id])
   sortOrder Int              @default(0)
-  published Boolean            @default(true) // false = ซ่อนจากพอร์ทัล (ยังเก็บประวัติคำขอเดิมไว้)
+  published Boolean          @default(true) // false = ซ่อนจากพอร์ทัล (ยังเก็บประวัติคำขอเดิมไว้)
   requests  ServiceRequest[]
 }
 
@@ -438,21 +440,22 @@ model FulfilmentTask {
 }
 
 model Problem {
-  id          String             @id @default(cuid())
-  seq         Int                @unique @default(autoincrement()) // PRB-####
-  title       String
-  phase       ProblemPhase       @default(IDENTIFICATION)
-  phaseLabel  String?
-  description String?
-  rootCause   String?
-  workaround  String?
-  workNote    String? // ข้อความสรุปบนแดชบอร์ด
-  resolvedAt  DateTime?
-  targetDate  DateTime? // วันที่คาดว่าจะแก้ไข/ทบทวน — แสดงในปฏิทิน Change & Problem
-  createdAt   DateTime           @default(now())
-  incidents   Incident[]
-  articles    KnowledgeArticle[]
-  changes     Change[]
+  id           String             @id @default(cuid())
+  seq          Int                @unique @default(autoincrement()) // PRB-####
+  title        String
+  phase        ProblemPhase       @default(IDENTIFICATION)
+  phaseLabel   String?
+  description  String?
+  rootCause    String?
+  workaround   String?
+  workNote     String? // ข้อความสรุปบนแดชบอร์ด
+  resolvedAt   DateTime?
+  targetDate   DateTime? // วันที่คาดว่าจะแก้ไข/ทบทวน — แสดงในปฏิทิน Change & Problem
+  createdAt    DateTime           @default(now())
+  incidents    Incident[]
+  articles     KnowledgeArticle[]
+  changes      Change[]
+  improvements ImprovementItem[]
 }
 
 model Change {
@@ -506,11 +509,39 @@ model KnowledgeArticle {
   createdAt DateTime      @default(now())
 }
 
+enum ImprovementStatus {
+  OPEN // กำลังดำเนินการ
+  ON_HOLD // พักไว้ชั่วคราว
+  DONE // บรรลุเป้าหมายและปิดแล้ว
+  CANCELLED // ยกเลิก
+}
+
+// ทะเบียนการปรับปรุงอย่างต่อเนื่อง — โมเดลปรับปรุง 7 ขั้นของ ITIL 4 (step 1–7)
 model ImprovementItem {
-  id        String @id @default(cuid())
-  title     String
-  step      Int // 1–7
-  sortOrder Int    @default(0)
+  id          String            @id @default(cuid())
+  seq         Int               @unique @default(autoincrement()) // IMP-####
+  title       String
+  step        Int // 1–7
+  sortOrder   Int               @default(0)
+  status      ImprovementStatus @default(OPEN)
+  description String? // วิสัยทัศน์/เหตุผลที่ต้องปรับปรุง (ขั้น 1)
+  baseline    String? // สถานะปัจจุบันที่วัดได้ (ขั้น 2)
+  goal        String? // เป้าหมายที่วัดได้ (ขั้น 3)
+  result      String? // ผลที่ได้จริง (ขั้น 6)
+  benefit     Level             @default(MED)
+  ownerId     String?
+  owner       User?             @relation("ImprovementOwner", fields: [ownerId], references: [id])
+  targetDate  DateTime?
+  problemId   String?
+  problem     Problem?          @relation(fields: [problemId], references: [id])
+  serviceId   String?
+  service     Service?          @relation(fields: [serviceId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @default(now()) @updatedAt
+  completedAt DateTime?
+
+  @@index([status])
+  @@index([ownerId])
 }
 
 model SurveyResponse {
