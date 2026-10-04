@@ -5,6 +5,7 @@ import { DomainError } from './errors';
 import { allowedTransitions, canTransition, lifecycleStep, type IncidentStatus } from './incident';
 import { calcPriority } from './priority';
 import { retarget, timerEffects } from './sla';
+import { notifyAssigned, notifyCritical, notifyCustomerNote, notifyResolved } from './mail/notify';
 
 export class IncidentError extends DomainError {}
 
@@ -62,6 +63,8 @@ export async function createIncident(input: IncidentInput, userId: string | null
       await db.slaTimer.update({ where: { incidentId_metric: { incidentId: incident.id, metric: p.metric } }, data: p.data });
     }
   }
+  if (incident.assigneeId) await notifyAssigned(incident, userId);
+  if (priority === 'P1') await notifyCritical(incident, userId);
   return incident;
 }
 
@@ -96,6 +99,10 @@ export async function updateIncident(id: string, input: IncidentInput, userId: s
       await db.slaTimer.update({ where: { id: t.id }, data: retarget(t, minutes) });
     }
   }
+
+  const after = { ...current, title: input.title, priority, assigneeId: input.assigneeId || null, serviceId: input.serviceId || null };
+  if (after.assigneeId && after.assigneeId !== current.assigneeId) await notifyAssigned(after, userId);
+  if (priority === 'P1' && current.priority !== 'P1') await notifyCritical(after, userId);
 }
 
 export async function changeStatus(id: string, to: IncidentStatus, userId: string | null, note?: string) {
@@ -128,11 +135,14 @@ export async function changeStatus(id: string, to: IncidentStatus, userId: strin
       await tx.slaTimer.update({ where: { incidentId_metric: { incidentId: id, metric: p.metric } }, data: p.data });
     }
   });
+  const text = note?.trim() ?? '';
+  if (to === 'RESOLVED') await notifyResolved(inc, text, userId);
+  else if (to === 'PENDING_USER') await notifyCustomerNote(inc, text || `เปลี่ยนสถานะจาก ${th.incidentStatus[from]} เป็น ${th.incidentStatus[to]}`, userId);
 }
 
 export async function addNote(id: string, body: string, visibility: NoteVisibility, kind: string, userId: string | null) {
   if (!body.trim()) throw new IncidentError('กรุณาพิมพ์ข้อความบันทึก');
-  const exists = await db.incident.findUnique({ where: { id }, select: { id: true } });
+  const exists = await db.incident.findUnique({ where: { id } });
   if (!exists) throw new IncidentError('ไม่พบ Incident');
   await db.workNote.create({
     data: {
@@ -140,6 +150,7 @@ export async function addNote(id: string, body: string, visibility: NoteVisibili
       tone: visibility === 'CUSTOMER' ? TONE.ok : TONE.accent,
     },
   });
+  if (visibility === 'CUSTOMER') await notifyCustomerNote(exists, body.trim(), userId);
 }
 
 export async function escalateMajor(id: string, userId: string | null) {
@@ -153,6 +164,7 @@ export async function escalateMajor(id: string, userId: string | null) {
       notes: { create: { authorId: userId, kind: 'ยกระดับ', tone: TONE.critical, body: 'ประกาศเป็น Major Incident เปิด Bridge call และแจ้งผู้บริหารตาม Communication plan' } },
     },
   });
+  await notifyCritical({ ...inc, isMajor: true }, userId);
 }
 
 export async function createProblemFromIncident(id: string, userId: string | null) {

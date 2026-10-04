@@ -4,6 +4,7 @@ import { DomainError } from './errors';
 import { assertCan, type Role } from './permissions';
 import { approvalOutcome, deliverCheck, requestStage, type RequestStatus } from './request';
 import { formatDocNo } from './docno';
+import { notifyRequestStatus } from './mail/notify';
 
 export class RequestError extends DomainError {}
 type Actor = { id: string; role: Role; name: string };
@@ -23,7 +24,7 @@ export async function decideRequest(actor: Actor, id: string, decision: 'APPROVE
   if (!step) throw new RequestError('ไม่มีขั้นอนุมัติที่รออยู่');
   if (decision === 'REJECTED' && !comment?.trim()) throw new RequestError('ต้องระบุเหตุผลเมื่อไม่อนุมัติ');
 
-  await db.$transaction(async (tx) => {
+  const outcome = await db.$transaction(async (tx) => {
     await tx.approvalStep.update({ where: { id: step.id }, data: { decision, decidedAt: new Date(), approver: `${step.approver} (${actor.name})` } });
     const all = await tx.approvalStep.findMany({ where: { requestId: id } });
     const outcome = approvalOutcome(all.map((a) => a.decision));
@@ -33,7 +34,9 @@ export async function decideRequest(actor: Actor, id: string, decision: 'APPROVE
     } else if (outcome === 'REJECTED') {
       await tx.serviceRequest.update({ where: { id }, data: { status: 'REJECTED', stage: requestStage('REJECTED'), nextNote: `ไม่อนุมัติ: ${comment?.trim()}` } });
     }
+    return outcome;
   });
+  if (outcome === 'APPROVED' || outcome === 'REJECTED') await notifyRequestStatus(id, outcome, comment, actor.id);
 }
 
 export async function addTask(actor: Actor, id: string, title: string) {
@@ -62,6 +65,7 @@ export async function deliverRequest(actor: Actor, id: string) {
   if (err) throw new RequestError(err);
   await db.serviceRequest.update({ where: { id }, data: { status: 'DELIVERED', stage: requestStage('DELIVERED'), deliveredAt: new Date(), nextNote: 'ส่งมอบเรียบร้อย โปรดประเมินบริการ' } });
   await logAudit('REQUEST', id, actor.id, `ส่งมอบ ${formatDocNo('REQ', r.seq)}`);
+  await notifyRequestStatus(id, 'DELIVERED', undefined, actor.id);
 }
 
 export async function cancelRequest(actor: Actor, id: string, reason: string) {

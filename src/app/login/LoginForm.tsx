@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState } from 'react';
+import { th } from '@/i18n/th';
 import { loginAction } from './actions';
 
 const field = 'box-border min-h-12 w-full rounded-control border border-input bg-surface px-3.5 text-base';
@@ -27,6 +29,7 @@ export function LoginForm({ callbackUrl, notice, info }: { callbackUrl: string; 
         <label htmlFor="password" className="text-sm font-medium">รหัสผ่าน</label>
         <input id="password" name="password" type="password" autoComplete="current-password" required className={field} />
       </div>
+      <Link href="/forgot-password" className="-mt-1 inline-flex min-h-11 items-center self-start text-sm font-semibold text-accent">{th.reset.forgotLink}</Link>
       <button type="submit" disabled={pending} className="h-12 rounded-control bg-accent text-base font-semibold text-white hover:bg-accent-hover disabled:opacity-60">
         {pending ? 'กำลังเข้าสู่ระบบ…' : 'เข้าสู่ระบบ'}
       </button>

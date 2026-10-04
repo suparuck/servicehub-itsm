@@ -154,17 +154,24 @@ model User {
   lastLoginAt        DateTime?
   mustChangePassword Boolean          @default(false) // รหัสผ่านชั่วคราวจากผู้ดูแล → ต้องเปลี่ยนก่อนใช้งาน
   passwordChangedAt  DateTime? // session ที่ออกก่อนเวลานี้ใช้ไม่ได้
+  notifyAssigned     Boolean          @default(true) // งานที่มอบหมายให้ฉัน / ผู้ใช้ตอบกลับเรื่องของฉัน
+  notifyCritical     Boolean          @default(true) // P1 / Major Incident
+  notifyMyItems      Boolean          @default(true) // ความคืบหน้าของเรื่องที่ฉันแจ้งหรือขอ
+  notifyApprovals    Boolean          @default(true) // มีคำขออนุมัติ Change / คำขอบริการ
+  notifySla          Boolean          @default(true) // SLA ใกล้ผิด / ผิด
   createdAt          DateTime         @default(now())
 
-  assignedIncidents Incident[]          @relation("IncidentAssignee")
-  managedIncidents  Incident[]          @relation("IncidentManager")
-  reportedIncidents Incident[]          @relation("IncidentReporter")
+  assignedIncidents Incident[]           @relation("IncidentAssignee")
+  managedIncidents  Incident[]           @relation("IncidentManager")
+  reportedIncidents Incident[]           @relation("IncidentReporter")
   requests          ServiceRequest[]
   notes             WorkNote[]
-  ownedCis          ConfigurationItem[] @relation("CiOwnerUser")
+  ownedCis          ConfigurationItem[]  @relation("CiOwnerUser")
   surveys           SurveyResponse[]
   changeApprovals   ChangeApproval[]
   auditLogs         AuditLog[]
+  resetTokens       PasswordResetToken[]
+  changesRequested  Change[]             @relation("ChangeRequester")
 }
 
 model AssignmentGroup {
@@ -221,16 +228,18 @@ model SlaTarget {
 }
 
 model SlaTimer {
-  id            String        @id @default(cuid())
-  incidentId    String
-  incident      Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
-  metric        SlaMetric
-  startedAt     DateTime
-  dueAt         DateTime
-  targetMinutes Int
-  achievedAt    DateTime?
-  pausedAt      DateTime?
-  state         SlaTimerState @default(RUNNING)
+  id               String        @id @default(cuid())
+  incidentId       String
+  incident         Incident      @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  metric           SlaMetric
+  startedAt        DateTime
+  dueAt            DateTime
+  targetMinutes    Int
+  achievedAt       DateTime?
+  pausedAt         DateTime?
+  nearNotifiedAt   DateTime? // ส่งแจ้งเตือน "ใกล้ผิด SLA" แล้ว (ส่งครั้งเดียว)
+  breachNotifiedAt DateTime? // ส่งแจ้งเตือน "ผิด SLA" แล้ว
+  state            SlaTimerState @default(RUNNING)
 
   @@unique([incidentId, metric])
 }
@@ -440,6 +449,8 @@ model Change {
   outcome            String?
   cabApproval        String? // CAB / ECAB
   completedAt        DateTime?
+  requesterId        String?
+  requester          User?            @relation("ChangeRequester", fields: [requesterId], references: [id])
   createdAt          DateTime         @default(now())
   cis                ChangeCI[]
   incidents          Incident[]
@@ -536,4 +547,54 @@ model AuditLog {
   at         DateTime @default(now())
 
   @@index([entityType, entityId, at])
+}
+
+enum EmailStatus {
+  PENDING
+  SENDING
+  SENT
+  FAILED
+}
+
+enum TokenKind {
+  RESET // ลืมรหัสผ่าน / ผู้ดูแลส่งลิงก์รีเซ็ต
+  INVITE // เชิญผู้ใช้ใหม่ให้ตั้งรหัสผ่านเอง
+}
+
+// คิวอีเมลขาออก: เขียนลง DB ก่อนแล้วค่อยส่ง (ไม่พึ่ง SMTP ในคำขอของผู้ใช้, retry ได้)
+// เนื้อหา (text/html) ถูกล้างหลังส่งสำเร็จ เพราะอาจมีลิงก์รีเซ็ตรหัสผ่านที่ยังใช้ได้
+model EmailOutbox {
+  id            String      @id @default(cuid())
+  toEmail       String
+  template      String
+  subject       String
+  text          String?
+  html          String?
+  critical      Boolean     @default(false) // อีเมลด้านความปลอดภัย — ไม่ผ่านค่าตั้งการแจ้งเตือนของผู้ใช้
+  status        EmailStatus @default(PENDING)
+  attempts      Int         @default(0)
+  nextAttemptAt DateTime    @default(now())
+  leasedUntil   DateTime?
+  lastError     String?
+  dedupeKey     String?     @unique
+  createdAt     DateTime    @default(now())
+  sentAt        DateTime?
+
+  @@index([status, nextAttemptAt])
+  @@index([createdAt])
+}
+
+// token ลืมรหัสผ่าน/เชิญผู้ใช้ — เก็บเฉพาะค่าแฮช SHA-256 (อ่าน DB แล้วก็ใช้ลิงก์ไม่ได้), ใช้ได้ครั้งเดียว, มีอายุ
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      TokenKind @default(RESET)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  requestIp String?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, usedAt])
 }

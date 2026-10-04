@@ -3,7 +3,7 @@ import type { Role } from './permissions';
 
 export type Access = { allow: true } | { allow: false; redirect: string };
 
-const PUBLIC = [/^\/login(\/|$)/, /^\/api\/auth(\/|$)/];
+const PUBLIC = [/^\/login(\/|$)/, /^\/forgot-password(\/|$)/, /^\/reset-password(\/|$)/, /^\/api\/auth(\/|$)/];
 
 export const homeFor = (role: Role | undefined | null) => (role === 'END_USER' ? '/portal' : '/');
 

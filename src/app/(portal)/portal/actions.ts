@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
+import { notifyIncidentReceived } from '@/lib/mail/notify';
 import { formatDocNo } from '@/lib/docno';
 import { IncidentError, addNote, changeStatus, createIncident } from '@/lib/incidentService';
 import { answersToLevels } from '@/lib/portal';
@@ -41,6 +42,7 @@ export async function reportIncidentAction(_: PortalFormState, fd: FormData): Pr
     },
     user.id,
   );
+  await notifyIncidentReceived(inc);
   revalidatePath('/', 'layout');
   redirect(`/portal/my/${formatDocNo('INC', inc.seq)}`);
 }

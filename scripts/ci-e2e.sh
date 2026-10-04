@@ -3,6 +3,7 @@
 # ใช้ได้ทั้งใน GitHub Actions และในเครื่อง (ต้องมี PostgreSQL ที่ DATABASE_URL ชี้ไป — เช่น `docker compose up -d db`)
 #
 # ตัวแปรที่ต้องมี : DATABASE_URL, AUTH_SECRET
+# อีเมล (E2E ที่ตรวจอีเมลต้องใช้): SMTP_HOST, SMTP_PORT, MAILPIT_URL — ชี้ไป Mailpit (docker compose up -d mailpit)
 # ตัวแปรเสริม     : PORT (3000) · SEED_PASSWORD (servicehub-demo) · E2E_BROWSER (chromium) · SKIP_BUILD=1
 #
 # หมายเหตุ: การรันนี้ล้างและ seed ฐานข้อมูลที่ DATABASE_URL ชี้ไป — อย่าชี้ไปฐานข้อมูลที่มีข้อมูลจริง
@@ -17,6 +18,8 @@ export E2E_BROWSER="${E2E_BROWSER:-chromium}"
 # ใช้ localhost (ไม่ใช่ 127.0.0.1): Next production แปลงโฮสต์ loopback เป็น localhost ในลิงก์ redirect ทำให้ cookie หลุดโดเมน
 export E2E_BASE_URL="http://localhost:${PORT}"
 export E2E_RESET_CMD="${E2E_RESET_CMD:-npx prisma db seed}"
+# ลิงก์ในอีเมลสร้างจาก APP_URL (ไม่ใช่ Host header) — ต้องชี้มาที่เซิร์ฟเวอร์ทดสอบ
+export APP_URL="${APP_URL:-${E2E_BASE_URL}}"
 export NEXT_TELEMETRY_DISABLED=1
 export AUTH_TRUST_HOST=true
 LOG_DIR="${RUNNER_TEMP:-${TMPDIR:-/tmp}}"

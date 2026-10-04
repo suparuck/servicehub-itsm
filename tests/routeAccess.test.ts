@@ -6,6 +6,12 @@ describe('checkAccess', () => {
     expect(checkAccess('/login', null)).toEqual({ allow: true });
     expect(checkAccess('/api/auth/session', null)).toEqual({ allow: true });
   });
+  it('หน้าลืม/ตั้งรหัสผ่านเปิดสาธารณะ (แต่ไม่รวมพาธที่แค่ขึ้นต้นคล้ายกัน)', () => {
+    expect(checkAccess('/forgot-password', null)).toEqual({ allow: true });
+    expect(checkAccess('/reset-password', null)).toEqual({ allow: true });
+    expect(checkAccess('/reset-password-evil', null)).toEqual({ allow: false, redirect: '/login' });
+    expect(checkAccess('/admin/email', null)).toEqual({ allow: false, redirect: '/login' });
+  });
   it('ไม่ล็อกอิน → ส่งไป /login', () => {
     expect(checkAccess('/', null)).toEqual({ allow: false, redirect: '/login' });
     expect(checkAccess('/portal', undefined)).toEqual({ allow: false, redirect: '/login' });

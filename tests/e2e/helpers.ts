@@ -26,7 +26,7 @@ export async function waitHydrated(page: Page, selector = 'form') {
 export async function login(page: Page, email: string, password = PASSWORD) {
   await page.goto('/login');
   await waitHydrated(page);
-  await page.getByLabel('อีเมล').fill(email);
+  await page.getByLabel('อีเมล', { exact: true }).fill(email);
   await page.getByLabel('รหัสผ่าน').fill(password);
   await page.getByRole('button', { name: 'เข้าสู่ระบบ' }).click();
 }

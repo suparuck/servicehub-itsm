@@ -4,6 +4,7 @@ import { getCurrentUser } from './currentUser';
 import { incidentBars, parsePortalDocNo, searchTokens, type DocKind } from './portal';
 import { th } from '@/i18n/th';
 import { formatDocNo } from './docno';
+import { notifyRequestApprovalNeeded } from './mail/notify';
 
 const DONE_REQ = ['DELIVERED', 'REJECTED', 'CANCELLED'] as const;
 
@@ -119,7 +120,9 @@ export async function submitRequest(userId: string, input: { catalogId: string; 
     catalog: { connect: { id: item.id } }, requester: { connect: { id: userId } },
     approvals: { create: { approver: 'หัวหน้างานโดยตรง' } },
   };
-  return db.serviceRequest.create({ data });
+  const created = await db.serviceRequest.create({ data });
+  await notifyRequestApprovalNeeded(created.id);
+  return created;
 }
 
 export async function submitSurvey(userId: string, docNo: string, score: number, comment: string) {

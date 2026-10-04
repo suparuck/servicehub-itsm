@@ -1,7 +1,7 @@
 import { expect, test, type Browser } from '@playwright/test';
 import { alert, asRole, login, waitHydrated } from './helpers';
 
-const baseURL = process.env.E2E_BASE_URL ?? 'http://:3000';
+const baseURL = process.env.E2E_BASE_URL ?? 'http://localhost:3000';
 const fresh = async (browser: Browser) => {
   const context = await browser.newContext({ baseURL, locale: 'th-TH', timezoneId: 'Asia/Bangkok', extraHTTPHeaders: { 'x-forwarded-for': '198.51.100.9' } });
   return { context, page: await context.newPage() };
@@ -41,7 +41,7 @@ test.describe.serial('ผู้ใช้ใหม่: สร้าง → รห
     const { page, context } = await asRole(browser, 'admin');
     await page.goto('/admin/users/new');
     await waitHydrated(page);
-    await page.getByLabel('อีเมล').fill(email);
+    await page.getByLabel('อีเมล', { exact: true }).fill(email);
     await page.getByLabel('ชื่อ-นามสกุล').fill(name);
     await page.getByLabel('บทบาท').selectOption('AGENT');
     await page.getByRole('button', { name: 'สร้างผู้ใช้' }).click();
@@ -62,7 +62,7 @@ test.describe.serial('ผู้ใช้ใหม่: สร้าง → รห
     const { page, context } = await asRole(browser, 'admin');
     await page.goto('/admin/users/new');
     await waitHydrated(page);
-    await page.getByLabel('อีเมล').fill(email.toUpperCase());
+    await page.getByLabel('อีเมล', { exact: true }).fill(email.toUpperCase());
     await page.getByLabel('ชื่อ-นามสกุล').fill('ซ้ำ');
     await page.getByRole('button', { name: 'สร้างผู้ใช้' }).click();
     await expect(alert(page)).toContainText('มีอยู่ในระบบแล้ว');
@@ -221,7 +221,7 @@ test.describe('จำกัดการเดารหัสผ่านเด�
     const email = `lockpw-${Date.now()}@servicehub.local`;
     await admin.page.goto('/admin/users/new');
     await waitHydrated(admin.page);
-    await admin.page.getByLabel('อีเมล').fill(email);
+    await admin.page.getByLabel('อีเมล', { exact: true }).fill(email);
     await admin.page.getByLabel('ชื่อ-นามสกุล').fill('ทดสอบ ล็อก');
     await admin.page.getByRole('button', { name: 'สร้างผู้ใช้' }).click();
     const temp = (await admin.page.getByTestId('temp-password').textContent())!.trim();

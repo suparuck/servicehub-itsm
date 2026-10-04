@@ -4,7 +4,7 @@ import { getCurrentUser } from '@/lib/currentUser';
 import { isDomainError } from '@/lib/errors';
 import { runAction } from '@/lib/actionUtils';
 import type { Role } from '@/lib/permissions';
-import { createUser, resetPassword, updateUser } from '@/lib/userService';
+import { createUser, resetPassword, sendResetLink, updateUser } from '@/lib/userService';
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? '').trim();
 
@@ -14,14 +14,14 @@ async function actor() {
 }
 
 /** ผลที่ส่งกลับไปแสดงในหน้า — รหัสผ่านชั่วคราวอยู่ใน response นี้เท่านั้น (ไม่เข้า URL ไม่เก็บใน DB เป็นข้อความธรรมดา) */
-export type SecretState = { error?: string; email?: string; tempPassword?: string | null; userId?: string } | undefined;
+export type SecretState = { error?: string; email?: string; tempPassword?: string | null; userId?: string; invited?: boolean; linkSent?: boolean } | undefined;
 
 export async function createUserAction(_: SecretState, fd: FormData): Promise<SecretState> {
   try {
     const r = await createUser(await actor(), {
-      email: str(fd, 'email'), name: str(fd, 'name'), role: str(fd, 'role'), groupId: str(fd, 'groupId') || null, ssoOnly: fd.get('ssoOnly') === 'on',
+      email: str(fd, 'email'), name: str(fd, 'name'), role: str(fd, 'role'), groupId: str(fd, 'groupId') || null, ssoOnly: fd.get('ssoOnly') === 'on', invite: fd.get('invite') === 'on',
     });
-    return { email: str(fd, 'email').toLowerCase(), tempPassword: r.tempPassword, userId: r.id };
+    return { email: str(fd, 'email').toLowerCase(), tempPassword: r.tempPassword, userId: r.id, invited: r.invited };
   } catch (e) {
     if (isDomainError(e)) return { error: e.message };
     throw e;
@@ -31,6 +31,16 @@ export async function createUserAction(_: SecretState, fd: FormData): Promise<Se
 export async function resetPasswordAction(id: string): Promise<SecretState> {
   try {
     return { tempPassword: await resetPassword(await actor(), id), userId: id };
+  } catch (e) {
+    if (isDomainError(e)) return { error: e.message };
+    throw e;
+  }
+}
+
+export async function sendResetLinkAction(id: string): Promise<SecretState> {
+  try {
+    await sendResetLink(await actor(), id);
+    return { linkSent: true, userId: id };
   } catch (e) {
     if (isDomainError(e)) return { error: e.message };
     throw e;

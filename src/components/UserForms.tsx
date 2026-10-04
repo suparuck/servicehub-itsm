@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import { th } from '@/i18n/th';
 import { ROLE_LABEL, type Role } from '@/lib/permissions';
-import { createUserAction, resetPasswordAction, type SecretState } from '@/app/(app)/admin/users/actions';
+import { createUserAction, resetPasswordAction, sendResetLinkAction, type SecretState } from '@/app/(app)/admin/users/actions';
 
 const field = 'box-border min-h-11 w-full rounded-control border border-input bg-surface px-3 text-sm';
 
@@ -46,7 +46,7 @@ export function CreateUserForm({ groups }: { groups: { id: string; name: string 
     return (
       <div className="flex flex-col gap-4 rounded-card border border-border bg-surface p-5">
         <h2 className="m-0 text-[17px] font-semibold">{t.created}: {state.email}</h2>
-        {state.tempPassword ? <TempPassword value={state.tempPassword} /> : <p className="m-0 text-sm text-muted">{t.noPassword}</p>}
+        {state.tempPassword ? <TempPassword value={state.tempPassword} /> : state.invited ? <p role="status" className="m-0 text-sm">{t.invitedNote}</p> : <p className="m-0 text-sm text-muted">{t.noPassword}</p>}
         <div className="flex flex-wrap gap-2">
           <Link href={`/admin/users/${state.userId}`} className="inline-flex h-11 items-center rounded-control bg-accent px-5 text-sm font-semibold text-white no-underline hover:bg-accent-hover hover:text-white">{t.toList}</Link>
           <Link href="/admin/users/new" className="inline-flex h-11 items-center rounded-control border border-input bg-surface px-5 text-sm text-ink no-underline hover:text-ink">{t.createAnother}</Link>
@@ -74,6 +74,7 @@ export function CreateUserForm({ groups }: { groups: { id: string; name: string 
         </label>
       </div>
       <label className="flex min-h-11 items-center gap-2.5 text-sm"><input type="checkbox" name="ssoOnly" className="h-4 w-4" />{f.sso}</label>
+      <label className="flex min-h-11 items-center gap-2.5 text-sm"><input type="checkbox" name="invite" className="h-4 w-4" />{t.inviteLabel}</label>
       <div className="flex flex-wrap gap-2">
         <button type="submit" disabled={pending} className="h-11 rounded-control bg-accent px-5 text-sm font-semibold text-white hover:bg-accent-hover disabled:opacity-60">{f.submit}</button>
         <Link href="/admin/users" className="inline-flex h-11 items-center rounded-control border border-input bg-surface px-5 text-sm text-ink no-underline hover:text-ink">{th.common.cancel}</Link>
@@ -95,6 +96,26 @@ export function ResetPasswordPanel({ userId, disabledReason }: { userId: string;
       ) : (
         <form action={formAction}>
           <button type="submit" disabled={pending} className="h-11 rounded-control border border-input bg-surface px-5 text-sm text-critical-fg disabled:opacity-60">{t.resetBtn}</button>
+        </form>
+      )}
+    </div>
+  );
+}
+
+export function SendResetLinkPanel({ userId, disabledReason, mailReady }: { userId: string; disabledReason?: string; mailReady: boolean }) {
+  const [state, formAction, pending] = useActionState<SecretState, FormData>(sendResetLinkAction.bind(null, userId), undefined);
+  const t = th.admin;
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="m-0 text-sm text-muted">{t.sendLinkHint}</p>
+      {!mailReady && <p className="m-0 text-xs text-warn-fg">{t.mailNotConfigured}</p>}
+      {state?.error && <div role="alert" className="rounded-control border border-critical-line bg-critical-soft px-3 py-2.5 text-sm text-critical-fg">{state.error}</div>}
+      {state?.linkSent && <div role="status" className="rounded-control border border-ok bg-ok-tint px-3 py-2.5 text-sm text-ok-fg">{t.sendLinkDone}</div>}
+      {disabledReason ? (
+        <p className="m-0 text-xs text-muted">{disabledReason}</p>
+      ) : (
+        <form action={formAction}>
+          <button type="submit" disabled={pending} className="h-11 rounded-control border border-input bg-surface px-5 text-sm disabled:opacity-60">{t.sendLinkBtn}</button>
         </form>
       )}
     </div>

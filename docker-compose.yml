@@ -16,6 +16,18 @@ services:
       timeout: 3s
       retries: 20
 
+  # กล่องจดหมายทดสอบ: SMTP :1025 · เว็บดูอีเมล http://localhost:8025 (อีเมลไม่ออกอินเทอร์เน็ตจริง)
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    ports:
+      - "8025:8025"
+      - "1025:1025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
   web:
     build:
       context: .
@@ -23,7 +35,12 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mailpit:
+        condition: service_healthy
     environment:
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      APP_URL: http://localhost:3000
       DATABASE_URL: postgresql://servicehub:servicehub@db:5432/servicehub?schema=public
       TZ: Asia/Bangkok
       WATCHPACK_POLLING: "true"

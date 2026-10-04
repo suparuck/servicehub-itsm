@@ -48,6 +48,6 @@ export const NAV: NavGroup[] = [
 ];
 
 /** กลุ่มเมนูที่แสดงเฉพาะผู้ดูแลระบบ (ไม่เกี่ยวกับ Service Value Chain) */
-NAV.push({ group: 'ADMIN · ผู้ดูแลระบบ', adminOnly: true, items: [{ id: 'users', label: 'ผู้ใช้และสิทธิ์', href: '/admin/users' }] });
+NAV.push({ group: 'ADMIN · ผู้ดูแลระบบ', adminOnly: true, items: [{ id: 'users', label: 'ผู้ใช้และสิทธิ์', href: '/admin/users' }, { id: 'email', label: 'อีเมลและการแจ้งเตือน', href: '/admin/email' }] });
 
 export const flatNav = NAV.flatMap((g) => g.items);

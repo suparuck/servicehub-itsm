@@ -15,7 +15,8 @@ export type Action =
   | 'request.fulfil'
   | 'incident.manage'
   | 'cmdb.manage'
-  | 'user.manage';
+  | 'user.manage'
+  | 'email.manage';
 
 const RULES: Record<Action, Role[]> = {
   'problem.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'ADMIN'],
@@ -30,6 +31,7 @@ const RULES: Record<Action, Role[]> = {
   'incident.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'CAB_MEMBER', 'CONFIG_MANAGER', 'ADMIN'],
   'cmdb.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CONFIG_MANAGER', 'ADMIN'],
   'user.manage': ['ADMIN'], // จัดการบัญชีผู้ใช้/บทบาท/รีเซ็ตรหัสผ่าน
+  'email.manage': ['ADMIN'], // ดูคิวอีเมล/ส่งอีเมลทดสอบ
 };
 
 export function can(role: Role | null | undefined, action: Action): boolean {

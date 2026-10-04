@@ -5,6 +5,7 @@ import { boardFor, canMove, evaluateApprovals, findConflicts, isClosed, validate
 import { DomainError } from './errors';
 import { formatDocNo } from './docno';
 import { assertCan, type Role } from './permissions';
+import { notifyChangeApprovalRequest, notifyChangeDecision } from './mail/notify';
 import { th } from '@/i18n/th';
 
 export class ChangeError extends DomainError {}
@@ -49,6 +50,7 @@ export async function createChange(actor: Actor, input: ChangeInput) {
       serviceId: input.serviceId || null, problemId: input.problemId || null, description: nn(input.description),
       implementationPlan: nn(input.implementationPlan), backoutPlan: nn(input.backoutPlan),
       cis: { create: input.ciIds.map((ciId) => ({ ciId })) },
+      requesterId: actor.id,
     },
   });
   await logAudit('CHANGE', c.id, actor.id, `สร้าง Change (${th.changeType[c.type]})`);
@@ -94,6 +96,7 @@ export async function submitChange(actor: Actor, id: string) {
     await tx.change.update({ where: { id }, data: { status: 'AWAITING_APPROVAL', cabApproval: board } });
     await logAudit('CHANGE', id, actor.id, `ส่งให้ ${board} พิจารณา (${members.length} คน)`, tx);
   });
+  await notifyChangeApprovalRequest(id, actor.id);
 }
 
 export async function decideApproval(actor: Actor, id: string, decision: Exclude<Decision, 'PENDING'>, comment?: string) {
@@ -105,7 +108,7 @@ export async function decideApproval(actor: Actor, id: string, decision: Exclude
   if (mine.decision !== 'PENDING') throw new ChangeError('คุณตัดสินใจไปแล้ว');
   if (decision === 'REJECTED' && !comment?.trim()) throw new ChangeError('ต้องระบุเหตุผลเมื่อไม่อนุมัติ');
 
-  await db.$transaction(async (tx) => {
+  const outcome = await db.$transaction(async (tx) => {
     await tx.changeApproval.update({ where: { id: mine.id }, data: { decision, comment: nn(comment), decidedAt: new Date() } });
     const all = await tx.changeApproval.findMany({ where: { changeId: id } });
     const result = evaluateApprovals(c.type, all.map((a) => a.decision));
@@ -117,7 +120,9 @@ export async function decideApproval(actor: Actor, id: string, decision: Exclude
       await tx.change.update({ where: { id }, data: { status: 'DRAFT' } });
       await logAudit('CHANGE', id, null, 'ถูกปฏิเสธ — กลับเป็นร่างเพื่อแก้ไขและส่งใหม่', tx);
     }
+    return result;
   });
+  if (outcome === 'APPROVED' || outcome === 'REJECTED') await notifyChangeDecision(id, outcome === 'APPROVED', comment, actor.id);
 }
 
 async function move(actor: Actor, id: string, to: ChangeStatus, action: 'change.manage', note: string, extra: Record<string, unknown> = {}, requireNote = false, noteText?: string) {

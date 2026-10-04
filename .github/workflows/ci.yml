@@ -53,8 +53,22 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+      # กล่องจดหมายทดสอบ — E2E อ่านอีเมลที่ระบบส่ง (ลืมรหัสผ่าน/แจ้งเตือน) ผ่าน API :8025
+      mailpit:
+        image: axllent/mailpit:v1.31.4
+        ports:
+          - 1025:1025
+          - 8025:8025
+        options: >-
+          --health-cmd "/mailpit readyz"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     env:
       CI: "true"
+      SMTP_HOST: localhost
+      SMTP_PORT: "1025"
+      MAILPIT_URL: http://localhost:8025
       DATABASE_URL: postgresql://servicehub:servicehub@localhost:5432/servicehub?schema=public
       E2E_BROWSER: chromium
     steps:

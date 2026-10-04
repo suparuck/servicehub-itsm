@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ActivityLog } from '@/components/ActivityLog';
 import { PageHeader } from '@/components/PageHeader';
-import { ResetPasswordPanel } from '@/components/UserForms';
+import { ResetPasswordPanel, SendResetLinkPanel } from '@/components/UserForms';
+import { mailConfig } from '@/lib/mail/config';
 import { Card, StatusBadge } from '@/components/ui';
 import { th } from '@/i18n/th';
 import { getAudit } from '@/lib/audit';
@@ -67,6 +68,11 @@ export default async function UserDetailPage({ params, searchParams }: { params:
         <Card className="gap-2 p-5">
           <h2 className="m-0 text-[17px] font-semibold">{t.reset}</h2>
           <ResetPasswordPanel userId={user.id} disabledReason={self ? t.resetSelf : undefined} />
+        </Card>
+
+        <Card className="gap-2 p-5">
+          <h2 className="m-0 text-[17px] font-semibold">{t.sendLinkTitle}</h2>
+          <SendResetLinkPanel userId={user.id} mailReady={mailConfig().configured} disabledReason={self ? t.resetSelf : !user.active ? t.inactive : !user.passwordHash ? t.noPassword : undefined} />
         </Card>
 
         <Card className="p-5">

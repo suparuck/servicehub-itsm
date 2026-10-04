@@ -4,6 +4,7 @@ import { isSessionStale } from '@/lib/session';
 import { db } from '@/lib/db';
 import type { Role } from '@/lib/permissions';
 import { homeFor, safeCallback } from '@/lib/routeAccess';
+import { th } from '@/i18n/th';
 import { entraLoginAction } from './actions';
 import { LoginForm } from './LoginForm';
 
@@ -18,6 +19,7 @@ const NOTICES: Record<string, string> = {
 };
 const INFO: Record<string, string> = {
   changed: 'เปลี่ยนรหัสผ่านเรียบร้อยแล้ว กรุณาเข้าสู่ระบบด้วยรหัสผ่านใหม่',
+  reset: th.reset.done,
 };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ callbackUrl?: string; reason?: string; error?: string }> }) {
