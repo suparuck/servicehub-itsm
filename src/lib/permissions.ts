@@ -17,7 +17,8 @@ export type Action =
   | 'cmdb.manage'
   | 'user.manage'
   | 'email.manage'
-  | 'catalogue.manage';
+  | 'catalogue.manage'
+  | 'asset.manage';
 
 const RULES: Record<Action, Role[]> = {
   'problem.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'ADMIN'],
@@ -32,6 +33,7 @@ const RULES: Record<Action, Role[]> = {
   'incident.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'CAB_MEMBER', 'CONFIG_MANAGER', 'ADMIN'],
   'cmdb.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CONFIG_MANAGER', 'ADMIN'],
   'user.manage': ['ADMIN'], // จัดการบัญชีผู้ใช้/บทบาท/รีเซ็ตรหัสผ่าน
+  'asset.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CONFIG_MANAGER', 'ADMIN'], // ทะเบียนสินทรัพย์: รับเข้า ส่งมอบ ซ่อม ปลดระวาง
   'catalogue.manage': ['RESOLVER_GROUP_LEAD', 'CONFIG_MANAGER', 'ADMIN'], // จัดการทะเบียนบริการ ข้อเสนอบริการ และรายการในแคตตาล็อกพอร์ทัล
   'email.manage': ['ADMIN'], // ดูคิวอีเมล/ส่งอีเมลทดสอบ
 };

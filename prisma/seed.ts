@@ -170,7 +170,26 @@ async function main() {
   await rel('ERP-DB-02', 'VMH-DC1-07', 'RUNS_ON');
   await rel('ERP-DB-02', 'SAN-DC1-A', 'DEPENDS_ON');
   await rel('ERP-APP-01', 'WAN-North-Link', 'CONNECTS_TO');
-  await prisma.asset.create({ data: { assetTag: 'ASSET-SRV-0891', ciId: ci['ERP-DB-02'], vendor: 'Oracle / Dell', supportUntil: minutesAhead(180 * 24 * 60) } });
+  await prisma.asset.create({ data: { assetTag: 'ASSET-SRV-0891', ciId: ci['ERP-DB-02'], vendor: 'Oracle / Dell', serialNo: 'DL-7XK2M93', location: 'DC1 · Rack B4', costBaht: 1850000, purchasedAt: bkk(-420, '00:00'), status: 'IN_USE', supportUntil: minutesAhead(180 * 24 * 60) } });
+  // ── สินทรัพย์ (IT Asset Management) — วันที่ผูกกับ "วันนี้" เสมอ เพื่อให้ตัวอย่างใกล้หมด/หมดอายุคงที่ ──
+  const assetDefs: { tag: string; ci: string; status: 'IN_USE' | 'IN_STOCK' | 'IN_REPAIR'; vendor: string; serial?: string; location?: string; cost?: number; bought: number; until?: number; holder?: string; qty?: number; used?: number }[] = [
+    { tag: 'ASSET-NET-0120', ci: 'FW-North-01', status: 'IN_USE', vendor: 'Fortinet', serial: 'FG-N4410', location: 'สาขาภาคเหนือ · ห้อง Network', cost: 320000, bought: -1100, until: -10 },
+    { tag: 'ASSET-NET-0121', ci: 'SW-DC1-CORE01', status: 'IN_USE', vendor: 'Cisco', serial: 'CS-9300-118', location: 'DC1 · Rack A1', cost: 540000, bought: -900, until: 60 },
+    { tag: 'ASSET-EUD-1936', ci: 'NB-FIN-0192', status: 'IN_USE', vendor: 'Lenovo', serial: 'LN-PF3K5Q', location: 'สำนักงานใหญ่ · ฝ่ายการเงิน', cost: 38900, bought: -540, until: 190, holder: 'employee' },
+    { tag: 'ASSET-EUD-1937', ci: 'PC-NORTH-021', status: 'IN_REPAIR', vendor: 'HP', serial: 'HP-8CC2411', location: 'สาขาภาคเหนือ', cost: 24500, bought: -800, until: 300 },
+    { tag: 'ASSET-LIC-0100', ci: 'Oracle DB Enterprise License', status: 'IN_USE', vendor: 'Oracle', cost: 4200000, bought: -700, until: 400, qty: 16, used: 16 },
+    { tag: 'ASSET-LIC-0101', ci: 'Adobe Creative Cloud (50 seats)', status: 'IN_USE', vendor: 'Adobe', cost: 960000, bought: -330, until: 35, qty: 50, used: 52 },
+  ];
+  for (const a of assetDefs) {
+    await prisma.asset.create({
+      data: {
+        assetTag: a.tag, ciId: ci[a.ci], status: a.status, vendor: a.vendor, serialNo: a.serial ?? null, location: a.location ?? null, costBaht: a.cost ?? null,
+        purchasedAt: bkk(a.bought, '00:00'), supportUntil: a.until === undefined ? null : bkk(a.until, '00:00'),
+        licenseQty: a.qty ?? null, licenseUsed: a.used ?? null,
+        assignedToId: a.holder === 'employee' ? employee : null, assignedAt: a.holder ? bkk(-200, '09:00') : null,
+      },
+    });
+  }
   const log = (name: string, daysAgo: number, what: string, source: string) =>
     prisma.cIChangeLog.create({ data: { ciId: ci[name], at: new Date(now.getTime() - daysAgo * 86_400_000), what, source } });
   await log('ERP-DB-02', 0, 'ปรับ processes 1500 → 2000 (รอ)', 'CHG-3381');

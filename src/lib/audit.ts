@@ -2,7 +2,7 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import { db } from './db';
 
 type Client = PrismaClient | Prisma.TransactionClient;
-export type AuditEntity = 'PROBLEM' | 'CHANGE' | 'REQUEST' | 'KB' | 'USER' | 'SERVICE';
+export type AuditEntity = 'PROBLEM' | 'CHANGE' | 'REQUEST' | 'KB' | 'USER' | 'SERVICE' | 'ASSET';
 
 export function logAudit(entityType: AuditEntity, entityId: string, userId: string | null, text: string, client: Client = db) {
   return client.auditLog.create({ data: { entityType, entityId, userId, text } });

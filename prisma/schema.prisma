@@ -171,6 +171,7 @@ model User {
   changeApprovals   ChangeApproval[]
   auditLogs         AuditLog[]
   notifications     Notification[]
+  assetsHeld        Asset[]              @relation("AssetAssignee")
   resetTokens       PasswordResetToken[]
   changesRequested  Change[]             @relation("ChangeRequester")
 }
@@ -287,14 +288,35 @@ model CIRelationship {
   @@unique([sourceId, targetId, type])
 }
 
+enum AssetStatus {
+  ORDERED // สั่งซื้อแล้ว รอรับของ
+  IN_STOCK // อยู่ในคลัง พร้อมจ่าย
+  IN_USE // ใช้งานอยู่ (มีผู้ถือครองหรือติดตั้งใช้งานแล้ว)
+  IN_REPAIR // ส่งซ่อม
+  RETIRED // ปลดระวางแล้ว
+}
+
 model Asset {
   id           String            @id @default(cuid())
   assetTag     String            @unique
   ciId         String            @unique
   ci           ConfigurationItem @relation(fields: [ciId], references: [id], onDelete: Cascade)
+  status       AssetStatus       @default(IN_USE)
   vendor       String?
+  serialNo     String?
+  location     String?
+  costBaht     Int?
   purchasedAt  DateTime?
-  supportUntil DateTime? // สัญญา MA/ประกัน
+  supportUntil DateTime? // สิ้นสุดประกัน/สัญญา MA (ไลเซนส์ = วันหมดอายุไลเซนส์)
+  licenseQty   Int? // ไลเซนส์: จำนวนสิทธิ์ที่ซื้อ
+  licenseUsed  Int? // ไลเซนส์: จำนวนสิทธิ์ที่ใช้ไปแล้ว
+  assignedToId String?
+  assignedTo   User?             @relation("AssetAssignee", fields: [assignedToId], references: [id])
+  assignedAt   DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@index([status])
+  @@index([assignedToId])
 }
 
 model Incident {

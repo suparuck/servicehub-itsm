@@ -141,7 +141,7 @@ export default async function CiDetailPage({ params, searchParams }: { params: P
                 {problems.map((p) => <Link key={p.id} href="/problems" className="inline-flex min-h-[44px] items-center text-sm">{formatDocNo('PRB', p.seq)} · {p.title}</Link>)}
                 {pendingChanges.map((c) => <Link key={c.id} href="/changes" className="inline-flex min-h-[44px] items-center text-sm">{formatDocNo('CHG', c.seq)} · {th.changeType[c.type]}</Link>)}
                 {kb.map((a) => <Link key={a.id} href={`/knowledge/${formatDocNo('KB', a.seq)}`} className="inline-flex min-h-[44px] items-center text-sm">{formatDocNo('KB', a.seq)} · {a.title}</Link>)}
-                {ci.asset && <span className="inline-flex min-h-[44px] items-center text-sm">{ci.asset.assetTag} · สินทรัพย์ (ITAM){ci.asset.supportUntil ? ` · สัญญา MA ถึง ${thDate(ci.asset.supportUntil)}` : ''}</span>}
+                {ci.asset && <span className="inline-flex flex-wrap items-center gap-x-1 text-sm"><Link href={`/assets/${ci.asset.assetTag}`} className="inline-flex min-h-[44px] items-center">{ci.asset.assetTag}</Link> · สินทรัพย์ (ITAM){ci.asset.supportUntil ? ` · สัญญา MA ถึง ${thDate(ci.asset.supportUntil)}` : ''}</span>}
               </Card>
             </div>
           </div>

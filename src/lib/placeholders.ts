@@ -43,13 +43,6 @@ export const PLACEHOLDERS: PlaceholderInfo[] = [
     ],
   },
   {
-    href: '/assets',
-    practice: 'IT Asset Management',
-    summary: 'ติดตามสินทรัพย์ฮาร์ดแวร์และไลเซนส์ซอฟต์แวร์ตลอดวงจรชีวิต โดยผูกกับ CI ใน CMDB',
-    planned: ['ทะเบียนสินทรัพย์ผูก 1:1 กับ CI ฮาร์ดแวร์/ไลเซนส์', 'วันที่ซื้อ การรับประกัน และผู้ถือครอง', 'แจ้งเตือนไลเซนส์ใกล้หมดอายุหรือใช้เกินสิทธิ์', 'ประวัติการโอนย้ายและการปลดระวาง'],
-    related: [{ label: 'CMDB / Configuration', href: '/cmdb', note: 'CI ทุกคลาสรวมอุปกรณ์ปลายทางและไลเซนส์ (ใช้งานได้แล้ว)' }],
-  },
-  {
     href: '/improvement',
     practice: 'Continual Improvement',
     summary: 'ทะเบียนรายการปรับปรุงและการติดตามผลตามโมเดลการปรับปรุง 7 ขั้นของ ITIL 4',
