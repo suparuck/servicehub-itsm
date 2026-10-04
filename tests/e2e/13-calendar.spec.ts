@@ -4,6 +4,13 @@ import { authFile, waitHydrated } from './helpers';
 // วันที่ตามเวลาไทย เลื่อนจากวันนี้ — ข้อมูล seed ผูกกับ "วันนี้" จึงคำนวณเดือนเอง ไม่ผูกกับวันที่จริง
 const ymdAt = (offsetDays: number) => new Date(Date.now() + 7 * 3600e3 + offsetDays * 86400e3).toISOString().slice(0, 10);
 const monthOf = (offsetDays: number) => ymdAt(offsetDays).slice(0, 7);
+/** กดบันทึกแล้วรอให้ server action ตอบกลับก่อน — ไม่งั้นการตรวจค่าในช่องเป็นจริงเสมอทั้งที่ยังไม่ได้บันทึก (และหน้าถัดไปอาจอ่านข้อมูลเก่า) */
+async function saveDetails(page: Page) {
+  await Promise.all([
+    page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/problems/')),
+    page.getByRole('button', { name: 'บันทึกรายละเอียด' }).click(),
+  ]);
+}
 const agenda = (page: Page) => page.getByTestId('agenda').getByRole('listitem');
 
 test.describe('ปฏิทิน Change & Problem', () => {
@@ -74,7 +81,7 @@ test.describe('ปฏิทิน Change & Problem', () => {
     await page.goto('/problems/PRB-0412');
     await waitHydrated(page);
     await page.getByLabel('กำหนดแก้ไข/ทบทวน').fill(target);
-    await page.getByRole('button', { name: 'บันทึกรายละเอียด' }).click();
+    await saveDetails(page);
     await expect(page.getByLabel('กำหนดแก้ไข/ทบทวน')).toHaveValue(target);
     await expect(page.getByText(/กำหนดแก้ไข\/ทบทวน: /).first()).toBeVisible(); // บันทึกในประวัติกิจกรรม
 
@@ -85,8 +92,9 @@ test.describe('ปฏิทิน Change & Problem', () => {
     await page.goto('/problems/PRB-0412');
     await waitHydrated(page);
     await page.getByLabel('กำหนดแก้ไข/ทบทวน').fill('');
-    await page.getByRole('button', { name: 'บันทึกรายละเอียด' }).click();
+    await saveDetails(page);
     await expect(page.getByLabel('กำหนดแก้ไข/ทบทวน')).toHaveValue('');
+    await expect(page.getByText('ล้างค่า').first()).toBeVisible(); // ประวัติกิจกรรมบันทึกการล้างค่าแล้ว = บันทึกลงฐานข้อมูลแล้วจริง
     await page.goto(`/calendar?month=${target.slice(0, 7)}`);
     await expect(agenda(page).filter({ hasText: 'PRB-0412' })).toHaveCount(0);
   });
