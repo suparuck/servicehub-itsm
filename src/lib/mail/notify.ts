@@ -5,7 +5,7 @@ import { th } from '@/i18n/th';
 import { absoluteUrl } from './config';
 import { enqueueMail } from './outbox';
 import { excerpt, pickRecipients, type Recipient } from './rules';
-import type { MailMessage, NotifyCategory } from './templates';
+import { summarize, TEMPLATE_META, type MailMessage, type NotifyCategory } from './templates';
 import { formatRemaining, thDateShort, thWindow } from '../datetime';
 import { timerView } from '../sla';
 
@@ -26,12 +26,28 @@ const usersByIds = (ids: (string | null | undefined)[]): Promise<Recipient[]> =>
 };
 const usersByRoles = (roles: Role[]): Promise<Recipient[]> => db.user.findMany({ where: { role: { in: roles }, active: true }, select: SELECT });
 
-/** ส่งให้ทุกคนที่เลือกรับหมวดนี้ — ตัดผู้กระทำเอง (ไม่ต้องแจ้งสิ่งที่เพิ่งทำเอง) */
-async function send(users: Recipient[], category: NotifyCategory, actorId: string | null | undefined, make: (u: Recipient) => MailMessage, dedupe?: (u: Recipient) => string) {
-  for (const u of pickRecipients(users, category, actorId)) await enqueueMail(u.email, make(u), { dedupeKey: dedupe?.(u) });
+/** แจ้งเตือนในระบบ (กระดิ่ง) ควบคู่กับอีเมล — เนื้อหาชุดเดียวกัน ไม่ทำสำหรับอีเมลความปลอดภัยของบัญชี และไม่ทำให้งานหลักล้ม */
+async function inApp(userId: string, category: NotifyCategory, message: MailMessage, dedupeKey?: string) {
+  if (TEMPLATE_META[message.template].critical) return;
+  try {
+    const s = summarize(message);
+    await db.notification.create({ data: { userId, category, title: s.title, body: s.body || null, href: s.href, dedupeKey } });
+  } catch (e) {
+    if (e && typeof e === 'object' && (e as { code?: string }).code === 'P2002') return; // เคยแจ้งแล้ว (dedupe)
+    console.error('[notify] in-app failed', e instanceof Error ? e.message : e);
+  }
 }
 
-const incUrl = (id: string) => absoluteUrl(`/incidents/${id}`);
+/** ส่งให้ทุกคนที่เลือกรับหมวดนี้ — ตัดผู้กระทำเอง (ไม่ต้องแจ้งสิ่งที่เพิ่งทำเอง) */
+async function send(users: Recipient[], category: NotifyCategory, actorId: string | null | undefined, make: (u: Recipient) => MailMessage, dedupe?: (u: Recipient) => string) {
+  for (const u of pickRecipients(users, category, actorId)) {
+    const message = make(u);
+    await enqueueMail(u.email, message, { dedupeKey: dedupe?.(u) });
+    await inApp(u.id, category, message, dedupe?.(u));
+  }
+}
+
+const incUrl = (seq: number) => absoluteUrl(`/incidents/${formatDocNo('INC', seq)}`);
 const portalUrl = (seq: number) => absoluteUrl(`/portal/my/${formatDocNo('INC', seq)}`);
 
 interface IncLike {
@@ -61,7 +77,7 @@ export const notifyAssigned = (inc: IncLike, actorId: string | null) =>
     const docNo = formatDocNo('INC', inc.seq);
     const service = inc.serviceId ? (await db.service.findUnique({ where: { id: inc.serviceId }, select: { name: true } }))?.name : undefined;
     await send(await usersByIds([inc.assigneeId]), 'assigned', actorId, (u) => ({
-      template: 'incidentAssigned', name: u.name, docNo, title: inc.title, priority: prio(inc.priority), service, url: incUrl(inc.id),
+      template: 'incidentAssigned', name: u.name, docNo, title: inc.title, priority: prio(inc.priority), service, url: incUrl(inc.seq),
     }));
   });
 
@@ -70,7 +86,7 @@ export const notifyCritical = (inc: IncLike, actorId: string | null) =>
   safely('incidentCritical', async () => {
     const docNo = formatDocNo('INC', inc.seq);
     await send(await usersByRoles(['RESOLVER_GROUP_LEAD', 'ADMIN']), 'critical', actorId, (u) => ({
-      template: 'incidentCritical', name: u.name, docNo, title: inc.title, priority: prio(inc.priority), major: !!inc.isMajor, url: incUrl(inc.id),
+      template: 'incidentCritical', name: u.name, docNo, title: inc.title, priority: prio(inc.priority), major: !!inc.isMajor, url: incUrl(inc.seq),
     }), (u) => `crit:${inc.id}:${inc.isMajor ? 'major' : inc.priority}:${u.id}`);
   });
 
@@ -80,7 +96,7 @@ export const notifyCustomerNote = (inc: IncLike, note: string, authorId: string 
     const docNo = formatDocNo('INC', inc.seq);
     if (authorId && authorId === inc.reporterId) {
       await send(await usersByIds([inc.assigneeId]), 'assigned', authorId, (u) => ({
-        template: 'incidentUserReplied', name: u.name, docNo, title: inc.title, note: excerpt(note), url: incUrl(inc.id),
+        template: 'incidentUserReplied', name: u.name, docNo, title: inc.title, note: excerpt(note), url: incUrl(inc.seq),
       }));
     } else {
       await send(await usersByIds([inc.reporterId]), 'myItems', authorId, (u) => ({
@@ -106,7 +122,7 @@ export const notifyChangeApprovalRequest = (changeId: string, actorId: string | 
     const pending = c.approvals.filter((a) => a.decision === 'PENDING').map((a) => a.approverId);
     await send(await usersByIds(pending), 'approvals', actorId, (u) => ({
       template: 'changeApprovalRequest', name: u.name, docNo, title: c.title, type: th.changeType[c.type], board: c.cabApproval ?? 'CAB',
-      window: `${thDateShort(c.windowStart)} ${thWindow(c.windowStart, c.windowEnd)} น.`, url: absoluteUrl(`/changes/${c.id}`),
+      window: `${thDateShort(c.windowStart)} ${thWindow(c.windowStart, c.windowEnd)} น.`, url: absoluteUrl(`/changes/${docNo}`),
     }));
   });
 
@@ -115,7 +131,7 @@ export const notifyChangeDecision = (changeId: string, approved: boolean, commen
     const c = await db.change.findUnique({ where: { id: changeId } });
     if (!c?.requesterId) return;
     await send(await usersByIds([c.requesterId]), 'myItems', actorId, (u) => ({
-      template: 'changeDecision', name: u.name, docNo: formatDocNo('CHG', c.seq), title: c.title, approved, comment: comment?.trim() || undefined, url: absoluteUrl(`/changes/${c.id}`),
+      template: 'changeDecision', name: u.name, docNo: formatDocNo('CHG', c.seq), title: c.title, approved, comment: comment?.trim() || undefined, url: absoluteUrl(`/changes/${formatDocNo('CHG', c.seq)}`),
     }));
   });
 
@@ -125,7 +141,7 @@ export const notifyRequestApprovalNeeded = (requestId: string) =>
     const r = await db.serviceRequest.findUnique({ where: { id: requestId }, include: { requester: true } });
     if (!r) return;
     await send(await usersByRoles(['RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'ADMIN']), 'approvals', r.requesterId, (u) => ({
-      template: 'requestApprovalNeeded', name: u.name, docNo: formatDocNo('REQ', r.seq), title: r.title, requester: r.requester?.name ?? '-', url: absoluteUrl(`/requests/${r.id}`),
+      template: 'requestApprovalNeeded', name: u.name, docNo: formatDocNo('REQ', r.seq), title: r.title, requester: r.requester?.name ?? '-', url: absoluteUrl(`/requests/${formatDocNo('REQ', r.seq)}`),
     }));
   });
 
@@ -174,10 +190,10 @@ export async function processSlaAlerts(now = new Date()): Promise<{ near: number
       if (wantBreach) {
         const over = Math.max(1, Math.round(-v.leftMs / MIN));
         const overrun = over >= 60 ? `${Math.floor(over / 60)} ชม. ${over % 60} นาที` : `${over} นาที`;
-        await send(who, 'sla', null, (u) => ({ template: 'slaBreached', name: u.name, docNo, title, priority: prio(inc.priority), overrun, url: incUrl(inc.id) }));
+        await send(who, 'sla', null, (u) => ({ template: 'slaBreached', name: u.name, docNo, title, priority: prio(inc.priority), overrun, url: incUrl(inc.seq) }));
         out.breached++;
       } else {
-        await send(who, 'sla', null, (u) => ({ template: 'slaNearBreach', name: u.name, docNo, title, priority: prio(inc.priority), left: formatRemaining(Math.round(v.leftMs / MIN)), url: incUrl(inc.id) }));
+        await send(who, 'sla', null, (u) => ({ template: 'slaNearBreach', name: u.name, docNo, title, priority: prio(inc.priority), left: formatRemaining(Math.round(v.leftMs / MIN)), url: incUrl(inc.seq) }));
         out.near++;
       }
     });

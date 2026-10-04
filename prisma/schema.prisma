@@ -170,6 +170,7 @@ model User {
   surveys           SurveyResponse[]
   changeApprovals   ChangeApproval[]
   auditLogs         AuditLog[]
+  notifications     Notification[]
   resetTokens       PasswordResetToken[]
   changesRequested  Change[]             @relation("ChangeRequester")
 }
@@ -597,4 +598,21 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId, usedAt])
+}
+
+// แจ้งเตือนในระบบ (กระดิ่ง) — สร้างคู่กับอีเมลแจ้งเตือนงาน ตามค่าตั้งรายหมวดของผู้ใช้เดียวกัน (ไม่รวมอีเมลความปลอดภัยของบัญชี)
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  String
+  title     String
+  body      String?
+  href      String?
+  readAt    DateTime?
+  dedupeKey String?
+  createdAt DateTime  @default(now())
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, readAt, createdAt])
 }

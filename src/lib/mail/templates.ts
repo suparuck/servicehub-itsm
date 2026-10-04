@@ -296,3 +296,22 @@ export function render(m: MailMessage, accountUrl = 'http://localhost:3000/accou
   const meta = TEMPLATE_META[m.template];
   return renderDoc(buildDoc(m), meta.critical, accountUrl);
 }
+
+export interface InAppSummary {
+  title: string;
+  body: string;
+  /** พาธภายในระบบ (ไม่มี origin) — เปิดจากกระดิ่งแจ้งเตือน */
+  href: string | null;
+}
+
+/** ข้อมูลสำหรับแจ้งเตือนในระบบ (กระดิ่ง) — ใช้เนื้อหาชุดเดียวกับอีเมล จึงสอดคล้องกันและ escape แล้วตอนแสดงผลด้วย React */
+export function summarize(m: MailMessage): InAppSummary {
+  const doc = buildDoc(m);
+  let href: string | null = null;
+  if (doc.cta) {
+    const u = new URL(safeUrl(doc.cta.url));
+    href = `${u.pathname}${u.search}`;
+  }
+  const body = doc.quote ?? doc.paragraphs[0] ?? '';
+  return { title: oneLine(doc.subject), body: body.slice(0, 280), href };
+}

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { AccountMenu } from '@/components/AccountMenu';
+import { NotificationBell } from '@/components/NotificationBell';
 import { PortalNav } from '@/components/PortalNav';
 import { th } from '@/i18n/th';
 import { getPortalUser } from '@/lib/portalService';
@@ -18,6 +19,7 @@ export default async function PortalLayout({ children }: { children: React.React
         <span className="grow" />
         <PortalNav />
         {user.role !== 'END_USER' && <Link href="/" className="inline-flex min-h-[44px] items-center px-2 text-xs text-muted">{th.portal.staffLink}</Link>}
+        <NotificationBell />
         <AccountMenu name={user.name} role={user.role as Role} tone="light" />
       </header>
       {children}

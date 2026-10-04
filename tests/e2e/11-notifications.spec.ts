@@ -104,7 +104,7 @@ test.describe.serial('แจ้งเตือนวงจร Incident ผ่า
     for (const who of [USERS.lead, USERS.admin]) {
       const crit = await waitForMail(who, new RegExp(`เหตุวิกฤต ${docNo}`));
       expect(crit.subject).toContain('[P1 วิกฤต]');
-      expect(linkIn(crit, '/incidents/')).toContain('/incidents/');
+      expect(linkIn(crit, '/incidents/')).toContain(`/incidents/${docNo}`); // ต้องเป็นเลขที่เอกสาร ไม่ใช่ id ภายใน (หน้ารายละเอียดรับเลขที่เอกสาร)
     }
   });
 

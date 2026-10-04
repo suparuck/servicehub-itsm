@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { absoluteUrl, appUrl, mailConfig } from '@/lib/mail/config';
 import { MAX_ATTEMPTS, backoffMs, excerpt, pickRecipients, type Recipient } from '@/lib/mail/rules';
-import { TEMPLATE_META, esc, oneLine, render, safeUrl, type MailMessage, type TemplateName } from '@/lib/mail/templates';
+import { TEMPLATE_META, esc, oneLine, render, safeUrl, summarize, type MailMessage, type TemplateName } from '@/lib/mail/templates';
 import { RESET_TTL_MS, generateToken, hashToken, looksLikeToken, tokenState } from '@/lib/mail/tokens';
 
 describe('tokens', () => {
@@ -156,5 +156,23 @@ describe('templates', () => {
     expect(TEMPLATE_META.slaBreached).toEqual({ critical: false, category: 'sla' });
     expect(TEMPLATE_META.passwordReset).toEqual({ critical: true });
     expect(TEMPLATE_META.incidentUserReplied).toEqual({ critical: false, category: 'assigned' });
+  });
+});
+
+describe('summarize (แจ้งเตือนในระบบ)', () => {
+  it('ลิงก์เป็นพาธภายใน ไม่มี origin และใช้หัวข้อเดียวกับอีเมล', () => {
+    const m: MailMessage = { template: 'incidentCritical', name: 'ก', docNo: 'INC-00001', title: 'ERP ล่ม', priority: 'P1 วิกฤต', major: false, url: 'https://itsm.example.com/incidents/INC-00001?x=1' };
+    const s = summarize(m);
+    expect(s.href).toBe('/incidents/INC-00001?x=1');
+    expect(s.title).toBe(render(m).subject);
+    expect(s.title).not.toMatch(/[\r\n]/);
+    expect(s.body.length).toBeLessThanOrEqual(280);
+  });
+  it('ลิงก์อันตรายถูกปฏิเสธ', () => {
+    expect(() => summarize({ template: 'incidentReceived', name: 'ก', docNo: 'INC-1', title: 'ข', url: 'javascript:alert(1)' })).toThrow();
+  });
+  it('ข้อความผู้ใช้ไม่ถูก escape ซ้ำ (React escape ตอนแสดง) แต่ไม่มีแท็ก HTML ที่เราเติม', () => {
+    const s = summarize({ template: 'incidentUpdateForUser', name: 'ก', docNo: 'INC-1', title: 'ข', note: '<b>x</b>', url: URL_ });
+    expect(s.body).toBe('<b>x</b>');
   });
 });
