@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/PageHeader';
 import { Card, PriorityChip, StatusBadge, cx, type Tone } from '@/components/ui';
 import { th } from '@/i18n/th';
 import { getAudit } from '@/lib/audit';
+import { bangkokYmd } from '@/lib/change';
 import { getCurrentUser } from '@/lib/currentUser';
 import { db } from '@/lib/db';
 import { formatDocNo, parseDocNo } from '@/lib/docno';
@@ -78,6 +79,10 @@ export default async function ProblemDetail({ params, searchParams }: { params: 
                   </label>
                   <label className="flex flex-col gap-1.5 text-[13px] font-medium">{t.workaround}
                     <textarea name="workaround" rows={3} defaultValue={problem.workaround ?? ''} className={`${field} py-3`} />
+                  </label>
+                  <label className="flex flex-col gap-1.5 text-[13px] font-medium">{t.targetDate}
+                    <input type="date" name="targetDate" defaultValue={problem.targetDate ? bangkokYmd(problem.targetDate) : ''} className={`${field} min-h-11 sm:max-w-xs`} />
+                    <span className="text-xs font-normal text-muted">{t.targetDateHint}</span>
                   </label>
                   {canEdit && <button type="submit" className="h-11 self-start rounded-control bg-accent px-5 text-sm font-semibold text-white hover:bg-accent-hover">{t.saveDetails}</button>}
                 </fieldset>

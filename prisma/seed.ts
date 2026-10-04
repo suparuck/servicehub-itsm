@@ -171,9 +171,9 @@ async function main() {
   await rel('VMH-DC1-07', 'SW-DC1-CORE01', 'CONNECTS_TO');
 
   // ── Problem / Knowledge ────────────────────────────────────────
-  const prb412 = await prisma.problem.create({ data: { seq: 412, title: 'Connection pool ของ ERP เต็มช่วงปิดงวด', phase: 'CONTROL', workNote: 'มีวิธีแก้ชั่วคราว', workaround: 'รีสตาร์ท connection pool ของ ERP-DB-02 และจำกัดงานรายงานช่วงปิดงวด' } });
-  const prb409 = await prisma.problem.create({ data: { seq: 409, title: 'ไคลเอนต์ VPN รุ่น 5.2 หลุดเมื่อสลับเครือข่าย', phase: 'KNOWN_ERROR', workNote: 'บันทึกใน KB-1187', rootCause: 'ไคลเอนต์ VPN รุ่น 5.2 ไม่รองรับการต่อ session เดิมเมื่อที่อยู่ IP เปลี่ยน (รอเวอร์ชันแก้ไขจากผู้ผลิต)', workaround: 'ปิดแล้วเชื่อมต่อ VPN ใหม่หลังสลับเครือข่าย หรือใช้ไคลเอนต์รุ่น 5.1' } });
-  const prb401 = await prisma.problem.create({ data: { seq: 401, title: 'คิว SMTP relay ล้นเมื่อส่งเกิน 2,000 ฉบับ/นาที', phase: 'ERROR_CONTROL', phaseLabel: 'รอ Change', workNote: 'ผูกกับ CHG-3376', rootCause: 'SMTP relay มี worker เดียวและขีดจำกัดคิวต่ำเกินไปเมื่อส่งเกิน 2,000 ฉบับ/นาที', workaround: 'จำกัดการส่งเมลจำนวนมากให้กระจายเป็นช่วงด้วยตัวกำหนดเวลา' } });
+  const prb412 = await prisma.problem.create({ data: { seq: 412, title: 'Connection pool ของ ERP เต็มช่วงปิดงวด', phase: 'CONTROL', targetDate: bkk(5, '00:00'), workNote: 'มีวิธีแก้ชั่วคราว', workaround: 'รีสตาร์ท connection pool ของ ERP-DB-02 และจำกัดงานรายงานช่วงปิดงวด' } });
+  const prb409 = await prisma.problem.create({ data: { seq: 409, title: 'ไคลเอนต์ VPN รุ่น 5.2 หลุดเมื่อสลับเครือข่าย', phase: 'KNOWN_ERROR', targetDate: bkk(-3, '00:00'), workNote: 'บันทึกใน KB-1187', rootCause: 'ไคลเอนต์ VPN รุ่น 5.2 ไม่รองรับการต่อ session เดิมเมื่อที่อยู่ IP เปลี่ยน (รอเวอร์ชันแก้ไขจากผู้ผลิต)', workaround: 'ปิดแล้วเชื่อมต่อ VPN ใหม่หลังสลับเครือข่าย หรือใช้ไคลเอนต์รุ่น 5.1' } });
+  const prb401 = await prisma.problem.create({ data: { seq: 401, title: 'คิว SMTP relay ล้นเมื่อส่งเกิน 2,000 ฉบับ/นาที', phase: 'ERROR_CONTROL', targetDate: bkk(12, '00:00'), phaseLabel: 'รอ Change', workNote: 'ผูกกับ CHG-3376', rootCause: 'SMTP relay มี worker เดียวและขีดจำกัดคิวต่ำเกินไปเมื่อส่งเกิน 2,000 ฉบับ/นาที', workaround: 'จำกัดการส่งเมลจำนวนมากให้กระจายเป็นช่วงด้วยตัวกำหนดเวลา' } });
   const kbs: { seq: number; title: string; views: number; problemId?: string; body: string }[] = [
     {
       seq: 1187, title: 'VPN หลุดบ่อยเมื่อสลับ Wi-Fi — วิธีแก้ชั่วคราว', views: 1876, problemId: prb409.id,

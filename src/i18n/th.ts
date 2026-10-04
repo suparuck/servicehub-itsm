@@ -708,6 +708,8 @@ export const th = {
     form: { title: 'หัวข้อ Problem', description: 'คำอธิบาย', descriptionHint: 'ลักษณะปัญหาที่เกิดซ้ำ ผลกระทบ และข้อสังเกต', submit: 'สร้าง Problem' },
     rootCause: 'สาเหตุที่แท้จริง (Root cause)',
     workaround: 'วิธีแก้ชั่วคราว (Workaround)',
+    targetDate: 'กำหนดแก้ไข/ทบทวน',
+    targetDateHint: 'แสดงในปฏิทิน Change & Problem และขึ้นเตือนเมื่อเลยกำหนดแต่ยังไม่แก้ไข',
     saveDetails: 'บันทึกรายละเอียด',
     transitionTitle: 'เปลี่ยนระยะ',
     transitionNext: 'ระยะถัดไป',

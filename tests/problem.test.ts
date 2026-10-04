@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { nextPhases, validateTransition } from '@/lib/problem';
+import { nextPhases, parseTargetDate, validateTransition } from '@/lib/problem';
 import { can, assertCan, PermissionError } from '@/lib/permissions';
 
 describe('problem transitions', () => {
@@ -47,5 +47,16 @@ describe('permissions', () => {
   it('assertCan โยน PermissionError', () => {
     expect(() => assertCan('AGENT', 'kb.publish')).toThrow(PermissionError);
     expect(() => assertCan('ADMIN', 'kb.publish')).not.toThrow();
+  });
+});
+
+describe('parseTargetDate', () => {
+  it('ว่าง = ล้างค่า; วันที่ถูกต้อง = 00:00 เวลาไทย', () => {
+    expect(parseTargetDate('')).toEqual({ date: null });
+    expect(parseTargetDate('  ')).toEqual({ date: null });
+    expect(parseTargetDate('2026-10-05')).toEqual({ date: new Date('2026-10-04T17:00:00Z') });
+  });
+  it('ปฏิเสธรูปแบบผิดและวันที่ที่ไม่มีจริง', () => {
+    for (const bad of ['5/10/2026', '2026-1-5', '2026-02-30', '2026-13-01', 'abc', '2026-10-05T00:00']) expect(parseTargetDate(bad)).toHaveProperty('error');
   });
 });

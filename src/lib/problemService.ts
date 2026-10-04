@@ -2,8 +2,9 @@ import { db } from './db';
 import { logAudit } from './audit';
 import { assertCan, type Role } from './permissions';
 import { parseDocNo, formatDocNo } from './docno';
-import { nextPhases, validateTransition, type ProblemPhase } from './problem';
+import { nextPhases, parseTargetDate, validateTransition, type ProblemPhase } from './problem';
 import { th } from '@/i18n/th';
+import { thDateShort } from './datetime';
 import { DomainError } from './errors';
 
 export class ProblemError extends DomainError {}
@@ -28,7 +29,7 @@ export async function createProblem(actor: Actor, input: { title: string; descri
   return p;
 }
 
-export async function updateProblem(actor: Actor, id: string, input: { title: string; description?: string; rootCause?: string; workaround?: string }) {
+export async function updateProblem(actor: Actor, id: string, input: { title: string; description?: string; rootCause?: string; workaround?: string; targetDate?: string }) {
   assertCan(actor.role, 'problem.manage');
   const cur = await load(id);
   const title = input.title.trim();
@@ -38,7 +39,14 @@ export async function updateProblem(actor: Actor, id: string, input: { title: st
   if (norm(input.rootCause) !== cur.rootCause) notes.push(`อัปเดตสาเหตุที่แท้จริง (Root cause): ${norm(input.rootCause) ?? '—'}`);
   if (norm(input.workaround) !== cur.workaround) notes.push(`อัปเดตวิธีแก้ชั่วคราว (Workaround): ${norm(input.workaround) ?? '—'}`);
   if (title !== cur.title) notes.push(`เปลี่ยนหัวข้อเป็น “${title}”`);
-  await db.problem.update({ where: { id }, data: { title, description: norm(input.description), rootCause: norm(input.rootCause), workaround: norm(input.workaround) } });
+  // วันที่กำหนดแก้ไข/ทบทวน (วันที่ตามเวลาไทย) — ว่าง = ล้างค่า; ไม่ส่งมา = ไม่แตะ
+  const parsed = input.targetDate === undefined ? undefined : parseTargetDate(input.targetDate);
+  if (parsed && 'error' in parsed) throw new ProblemError(parsed.error);
+  const target = parsed === undefined ? undefined : parsed.date;
+  if (target !== undefined && (target?.getTime() ?? null) !== (cur.targetDate?.getTime() ?? null)) {
+    notes.push(`กำหนดแก้ไข/ทบทวน: ${target ? thDateShort(target) : '— (ล้างค่า)'}`);
+  }
+  await db.problem.update({ where: { id }, data: { title, description: norm(input.description), rootCause: norm(input.rootCause), workaround: norm(input.workaround), ...(target !== undefined ? { targetDate: target } : {}) } });
   if (notes.length) await logAudit('PROBLEM', id, actor.id, notes.join('\n'));
 }
 

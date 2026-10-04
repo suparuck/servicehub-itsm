@@ -32,7 +32,7 @@ export async function createProblemAction(fd: FormData) {
 export async function updateProblemAction(id: string, fd: FormData) {
   const back = await docOf(id);
   await runAction(back, async () => {
-    await updateProblem(await actor(), id, { title: str(fd, 'title'), description: str(fd, 'description'), rootCause: str(fd, 'rootCause'), workaround: str(fd, 'workaround') });
+    await updateProblem(await actor(), id, { title: str(fd, 'title'), description: str(fd, 'description'), rootCause: str(fd, 'rootCause'), workaround: str(fd, 'workaround'), targetDate: str(fd, 'targetDate') });
   });
 }
 
