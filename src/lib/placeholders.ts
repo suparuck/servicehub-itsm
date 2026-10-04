@@ -43,16 +43,6 @@ export const PLACEHOLDERS: PlaceholderInfo[] = [
     ],
   },
   {
-    href: '/catalogue',
-    practice: 'Service Catalogue Management',
-    summary: 'ทะเบียนบริการและข้อเสนอบริการ พร้อมเจ้าของ หมวดหมู่ และ SLA ที่ผูกอยู่',
-    planned: ['จัดการ Service / Service Offering', 'กำหนดเจ้าของบริการและ SLA ที่ผูก', 'เผยแพร่รายการสู่แคตตาล็อกฝั่งผู้ใช้', 'ดูบริการที่ได้รับผลกระทบจาก CI/Change'],
-    related: [
-      { label: 'แคตตาล็อกบริการ (พอร์ทัล)', href: '/portal/catalog', note: 'รายการที่ผู้ใช้เห็นและขอได้ (ใช้งานได้แล้ว)' },
-      { label: 'Service Level Management', href: '/sla', note: 'เป้าหมายและรายงาน SLA (ใช้งานได้แล้ว)' },
-    ],
-  },
-  {
     href: '/assets',
     practice: 'IT Asset Management',
     summary: 'ติดตามสินทรัพย์ฮาร์ดแวร์และไลเซนส์ซอฟต์แวร์ตลอดวงจรชีวิต โดยผูกกับ CI ใน CMDB',

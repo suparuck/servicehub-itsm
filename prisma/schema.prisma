@@ -375,6 +375,7 @@ model CatalogItem {
   serviceId String?
   service   Service?         @relation(fields: [serviceId], references: [id])
   sortOrder Int              @default(0)
+  published Boolean            @default(true) // false = ซ่อนจากพอร์ทัล (ยังเก็บประวัติคำขอเดิมไว้)
   requests  ServiceRequest[]
 }
 

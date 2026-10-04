@@ -5,7 +5,6 @@ const PAGES = [
   { path: '/service-desk', title: 'Service Desk', group: 'ENGAGE', practice: 'Service Desk', related: 'Incident Management' },
   { path: '/monitoring', title: 'Monitoring & Event', group: 'DELIVER & SUPPORT', practice: 'Monitoring and Event Management', related: 'CMDB / Configuration' },
   { path: '/releases', title: 'Release Management', group: 'DESIGN & TRANSITION', practice: 'Release Management', related: 'Change Enablement' },
-  { path: '/catalogue', title: 'Service Catalogue', group: 'DESIGN & TRANSITION', practice: 'Service Catalogue Management', related: 'แคตตาล็อกบริการ (พอร์ทัล)' },
   { path: '/assets', title: 'IT Asset Management', group: 'OBTAIN / BUILD', practice: 'IT Asset Management', related: 'CMDB / Configuration' },
   { path: '/improvement', title: 'Continual Improvement', group: 'PLAN & IMPROVE', practice: 'Continual Improvement', related: 'Problem Management' },
 ] as const;

@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export default async function PortalNewRequest({ searchParams }: { searchParams: Promise<{ item?: string; access?: string }> }) {
   const sp = await searchParams;
   const f = th.portal.requestForm;
-  const items = await db.catalogItem.findMany({ orderBy: { sortOrder: 'asc' }, select: { id: true, name: true } });
+  const items = await db.catalogItem.findMany({ where: { published: true }, orderBy: { sortOrder: 'asc' }, select: { id: true, name: true } });
   // ทางลัด "ขอสิทธิ์เข้าถึง" → เลือกหมวดบัญชีผู้ใช้ และเติมหัวข้อให้
   const access = sp.access === '1';
   const initialItem = sp.item ?? (access ? items.find((i) => i.name.includes('บัญชีผู้ใช้'))?.id : undefined);

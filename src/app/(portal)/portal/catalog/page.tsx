@@ -6,7 +6,7 @@ import { db } from '@/lib/db';
 export const dynamic = 'force-dynamic';
 
 export default async function PortalCatalog() {
-  const items = await db.catalogItem.findMany({ orderBy: { sortOrder: 'asc' } });
+  const items = await db.catalogItem.findMany({ where: { published: true }, orderBy: { sortOrder: 'asc' } });
   const p = th.portal;
   return (
     <PortalPage>

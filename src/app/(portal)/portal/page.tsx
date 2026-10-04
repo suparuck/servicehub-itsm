@@ -21,8 +21,8 @@ export default async function PortalHome({ searchParams }: { searchParams: Promi
   const user = await getPortalUser();
   const [outage, catalog, catalogCount, kb, mine, survey] = await Promise.all([
     getOutage(),
-    db.catalogItem.findMany({ orderBy: { sortOrder: 'asc' } }),
-    db.catalogItem.count(),
+    db.catalogItem.findMany({ where: { published: true }, orderBy: { sortOrder: 'asc' } }),
+    db.catalogItem.count({ where: { published: true } }),
     db.knowledgeArticle.findMany({ where: { status: 'PUBLISHED' }, orderBy: { views: 'desc' }, take: 4 }),
     user ? getMine(user.id, { onlyActive: true, take: 3 }) : [],
     user ? getSurveyCandidate(user.id) : null,

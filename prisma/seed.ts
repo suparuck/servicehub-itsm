@@ -97,6 +97,17 @@ async function main() {
     ).id;
   }
 
+  // ── ข้อเสนอบริการ (Service Offering) ──────────────────────────
+  const offerings: Record<string, [string, string][]> = {
+    ERP: [['ERP — บัญชีและการเงิน', 'บัญชีแยกประเภท เจ้าหนี้/ลูกหนี้ ปิดงวด'], ['ERP — จัดซื้อและคลังสินค้า', 'ใบขอซื้อ ใบสั่งซื้อ รับ/จ่ายสินค้า']],
+    VPN: [['VPN สำหรับพนักงาน', 'เชื่อมต่อเครือข่ายองค์กรจากภายนอก (MFA)'], ['VPN สำหรับผู้รับเหมา', 'สิทธิ์ชั่วคราวตามสัญญา จำกัดระบบที่เข้าถึงได้']],
+    M365: [['กล่องจดหมายและปฏิทิน', 'Exchange Online'], ['Teams และ SharePoint', 'การประชุมและพื้นที่ทำงานร่วมกัน']],
+    ENDPOINT: [['โน้ตบุ๊กมาตรฐาน', 'เครื่อง จอภาพ และอุปกรณ์ต่อพ่วง'], ['ติดตั้งซอฟต์แวร์', 'โปรแกรมมาตรฐานและไลเซนส์ตามคำขอ']],
+  };
+  for (const [code, list] of Object.entries(offerings)) {
+    for (const [name, description] of list) await prisma.serviceOffering.create({ data: { serviceId: svc[code], name, description } });
+  }
+
   // ── CMDB (design/CMDB.dc.html) ──────────────────────────────────
   const ciDefs: any[] = [
     { ciId: 'CI-SVC-0003', name: 'ERP Production', subtitle: '340 ผู้ใช้ · SLA 99.5%', ciClass: 'BUSINESS_SERVICE', classLabel: 'Business Service', ownerLabel: 'ฝ่ายบัญชีและการเงิน', lifecycle: 'LIVE', attributes: { userCount: 340, slaTarget: '99.5%' } },

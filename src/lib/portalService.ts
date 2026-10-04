@@ -84,7 +84,7 @@ export async function searchPortal(q: string) {
   if (!tokens.length) return { catalog: [], articles: [] };
   const like = (field: string) => tokens.map((t) => ({ [field]: { contains: t, mode: 'insensitive' as const } }));
   const [catalog, articles] = await Promise.all([
-    db.catalogItem.findMany({ where: { OR: [...like('name'), ...like('items')] }, orderBy: { sortOrder: 'asc' } }),
+    db.catalogItem.findMany({ where: { published: true, OR: [...like('name'), ...like('items')] }, orderBy: { sortOrder: 'asc' } }),
     db.knowledgeArticle.findMany({ where: { status: 'PUBLISHED', OR: [...like('title'), ...like('body')] }, orderBy: { views: 'desc' }, take: 20 }),
   ]);
   return { catalog, articles };
@@ -113,7 +113,7 @@ export async function submitRequest(userId: string, input: { catalogId: string; 
   if (!title) throw new PortalError('กรุณาระบุสิ่งที่ต้องการ');
   if (title.length > 200) throw new PortalError('หัวข้อยาวเกิน 200 ตัวอักษร');
   const item = await db.catalogItem.findUnique({ where: { id: input.catalogId } });
-  if (!item) throw new PortalError('กรุณาเลือกประเภทบริการ');
+  if (!item || !item.published) throw new PortalError('กรุณาเลือกประเภทบริการ');
   const data: Prisma.ServiceRequestCreateInput = {
     title, description: input.description.trim() || null, status: 'PENDING_APPROVAL', stage: 2,
     nextNote: 'ส่ง → อนุมัติ → จัดเตรียม → ส่งมอบ · รอหัวหน้างานอนุมัติ',
