@@ -26,6 +26,7 @@ export const th = {
     problem: 'Problem Management',
     monitoring: 'Monitoring & Event',
     change: 'Change Enablement',
+    calendar: 'ปฏิทิน Change & Problem',
     release: 'Release Management',
     catalogue: 'Service Catalogue',
     cmdb: 'CMDB / Configuration',
@@ -577,6 +578,27 @@ export const th = {
     COMPLETED: 'สำเร็จ',
     FAILED: 'ไม่สำเร็จ',
     CANCELLED: 'ยกเลิก',
+  },
+
+  calendar: {
+    title: 'ปฏิทิน Change & Problem',
+    breadcrumb: 'Design & Transition › ปฏิทิน',
+    aria: 'ปฏิทิน Change และ Problem',
+    filterTitle: 'แสดง',
+    showChange: 'Change (ช่วงดำเนินการ)',
+    showProblem: 'Problem (กำหนดแก้ไข/ทบทวน)',
+    apply: 'ใช้ตัวกรอง',
+    agendaTitle: 'รายการในเดือนนี้',
+    empty: 'ไม่มีรายการในเดือนนี้',
+    conflict: 'ชนกับ',
+    overdue: 'เลยกำหนด',
+    legendTitle: 'สัญลักษณ์',
+    export: 'ดาวน์โหลด .ics (30 วันที่ผ่านมา – 6 เดือนข้างหน้า)',
+    exportHint: 'นำเข้า Outlook / Google Calendar ได้ (เป็นไฟล์ ณ เวลาที่ดาวน์โหลด ไม่ซิงก์อัตโนมัติ)',
+    tag: {
+      STANDARD: 'Standard Change', NORMAL: 'Normal Change', EMERGENCY: 'Emergency Change',
+      PROBLEM_DUE: 'Problem · กำหนดแก้ไข/ทบทวน', PROBLEM_OVERDUE: 'Problem · เลยกำหนด', PROBLEM_RESOLVED: 'Problem · แก้ไขแล้ว',
+    },
   },
 
   change: {

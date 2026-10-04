@@ -425,6 +425,7 @@ model Problem {
   workaround  String?
   workNote    String? // ข้อความสรุปบนแดชบอร์ด
   resolvedAt  DateTime?
+  targetDate  DateTime? // วันที่คาดว่าจะแก้ไข/ทบทวน — แสดงในปฏิทิน Change & Problem
   createdAt   DateTime           @default(now())
   incidents   Incident[]
   articles    KnowledgeArticle[]

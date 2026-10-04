@@ -26,6 +26,7 @@ export const NAV: NavGroup[] = [
     group: th.nav.design,
     items: [
       { id: 'change', label: th.nav.change, href: '/changes' },
+      { id: 'calendar', label: th.nav.calendar, href: '/calendar' },
       { id: 'release', label: th.nav.release, href: '/releases' },
       { id: 'catalogue', label: th.nav.catalogue, href: '/catalogue' },
     ],
