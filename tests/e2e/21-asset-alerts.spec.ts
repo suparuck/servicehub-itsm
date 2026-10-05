@@ -13,6 +13,15 @@ async function saveAsset(page: Page, tag: string, field: RegExp | string, value:
   await Promise.all([page.waitForResponse((r) => r.request().method() === 'POST'), page.getByRole('button', { name: 'บันทึกการแก้ไข' }).click()]);
   await page.waitForLoadState('networkidle');
 }
+/** สร้าง CI อุปกรณ์ผู้ใช้ใหม่ใน CMDB (เทสต์นี้ต้องไม่พึ่ง CI ที่ยังไม่มีสินทรัพย์ตามข้อมูลตัวอย่าง — ชุด 16 ใช้ไปแล้วเมื่อรันทั้งชุด) */
+async function newDeviceCi(page: Page, name: string) {
+  await page.goto('/cmdb/new');
+  await waitHydrated(page);
+  await page.getByLabel(/ชื่อ CI/).fill(name);
+  await page.getByLabel('คลาส').selectOption('END_USER_DEVICE');
+  await page.getByRole('button', { name: 'เพิ่ม CI' }).click();
+  await expect(page).toHaveURL(/\/cmdb\/CI-EUD-\d+$/);
+}
 const countMails = async (to: string, subject: RegExp) => (await mailsTo(to)).filter((m) => subject.test(m.subject)).length;
 
 test.describe.serial('แจ้งเตือนประกัน/ไลเซนส์ใกล้หมด', () => {
@@ -53,6 +62,8 @@ test.describe.serial('แจ้งเตือนประกัน/ไลเซ
     await waitForMail(MANAGER, /ประกัน\/สัญญา MAหมดอายุแล้ว.*ASSET-NET-0120/);
   });
 
+  let newTag = '';
+
   test('ผู้ใช้ปิดหมวด "ประกัน/ไลเซนส์ใกล้หมด" → ไม่ได้อีเมลและไม่มีรายการในกระดิ่ง (คนอื่นยังได้)', async ({ browser, page }) => {
     const admin = await asRole(browser, 'admin');
     await admin.page.goto('/account');
@@ -60,11 +71,21 @@ test.describe.serial('แจ้งเตือนประกัน/ไลเซ
     await admin.page.getByRole('button', { name: 'บันทึกการแจ้งเตือน' }).click();
     await expect(admin.page.getByText('บันทึกการตั้งค่าการแจ้งเตือนแล้ว')).toBeVisible();
 
-    await saveAsset(page, 'ASSET-NET-0121', 'สถานที่', 'DC1 · Rack A2'); // MA อีก 60 วัน → ขั้น 90
-    await waitForMail(MANAGER, /ประกัน\/สัญญา MAใกล้หมด \(อีก 60 วัน\).*ASSET-NET-0121/);
-    await expectNoMail(USERS.admin, /ASSET-NET-0121/, 5_000);
+    // ใช้สินทรัพย์ที่ขึ้นทะเบียนใหม่ในเทสต์นี้เอง (ไม่ใช่สินทรัพย์ตัวอย่าง): worker ตรวจสินทรัพย์ตัวอย่างเองในนาทีแรกหลังเซิร์ฟเวอร์เริ่ม
+    // ซึ่งอาจส่งอีเมลไปก่อนที่เทสต์จะปิดหมวด ทำให้ผลของการปิดหมวดปนกับอีเมลที่ส่งไปแล้ว
+    await newDeviceCi(page, 'E2E-ALERT-NB');
+    await page.goto('/assets/new');
+    await waitHydrated(page);
+    const select = page.getByLabel(/CI ที่จะขึ้นทะเบียน/);
+    await select.selectOption((await select.locator('option', { hasText: 'E2E-ALERT-NB' }).getAttribute('value'))!);
+    await page.getByLabel(/สิ้นสุดประกัน\/MA/).fill(ymdAt(60)); // อีก 60 วัน → ขั้น 90
+    await page.getByRole('button', { name: 'รับเข้าทะเบียน' }).click();
+    await expect(page).toHaveURL(/\/assets\/ASSET-EUD-\d{4}$/);
+    newTag = page.url().split('/').pop()!;
+    await waitForMail(MANAGER, new RegExp(`ประกัน/สัญญา MAใกล้หมด \\(อีก 60 วัน\\).*${newTag}`));
+    await expectNoMail(USERS.admin, new RegExp(newTag), 5_000);
     await admin.page.goto('/notifications');
-    await expect(admin.page.getByText(/ASSET-NET-0121/)).toHaveCount(0);
+    await expect(admin.page.getByText(new RegExp(newTag))).toHaveCount(0);
 
     await admin.page.goto('/account');
     await admin.page.getByLabel(/ประกัน\/ไลเซนส์ใกล้หมด/).check();
@@ -73,21 +94,15 @@ test.describe.serial('แจ้งเตือนประกัน/ไลเซ
     await admin.context.close();
   });
 
-  test('รับสินทรัพย์ใหม่ที่ใกล้หมดแล้ว (อีก 5 วัน) → แจ้งทันทีเฉพาะขั้นปัจจุบัน ไม่ย้อนแจ้งขั้น 90/30', async ({ page }) => {
-    await page.goto('/assets/new');
-    await waitHydrated(page);
-    const select = page.getByLabel(/CI ที่จะขึ้นทะเบียน/);
-    await select.selectOption((await select.locator('option', { hasText: 'NB-HR-0044' }).getAttribute('value'))!);
-    await page.getByLabel(/สิ้นสุดประกัน\/MA/).fill(ymdAt(5));
-    await page.getByRole('button', { name: 'รับเข้าทะเบียน' }).click();
-    await expect(page).toHaveURL(/\/assets\/ASSET-EUD-\d{4}$/);
-    const tag = page.url().split('/').pop()!;
-    const mail = await waitForMail(USERS.admin, new RegExp(`อีก 5 วัน.*${tag}`));
+  test('วันหมดอายุเลื่อนเข้าใกล้ (อีก 5 วัน) → แจ้งทันทีเฉพาะขั้นปัจจุบัน ไม่ย้อนแจ้งขั้น 90/30 (ขั้น 90 ถูกส่งไปแล้วเมื่อวันหมดอายุเดิม)', async ({ page }) => {
+    await saveAsset(page, newTag, /^สิ้นสุดประกัน\/MA/, ymdAt(5));
+    const mail = await waitForMail(USERS.admin, new RegExp(`อีก 5 วัน.*${newTag}`));
     expect(mail.subject).toContain('ประกัน/สัญญา MAใกล้หมด');
     await new Promise((r) => setTimeout(r, 4000));
-    expect((await mailsTo(USERS.admin)).filter((m) => m.subject.includes(tag))).toHaveLength(1);
+    // ผู้ดูแลปิดหมวดตอนขั้น 90 จึงมีเฉพาะอีเมลขั้น 7 ฉบับเดียว (ไม่มีขั้น 30)
+    expect((await mailsTo(USERS.admin)).filter((m) => m.subject.includes(newTag))).toHaveLength(1);
+    expect(await countMails(MANAGER, new RegExp(newTag))).toBe(2); // ผู้จัดการได้ครบ: ขั้น 90 (เดิม) และขั้น 7 (ใหม่)
   });
-
   test('สินทรัพย์ที่ปลดระวางแล้วไม่ถูกแจ้งเตือน', async ({ page }) => {
     await page.goto('/assets/ASSET-EUD-1937'); // ส่งซ่อม มีประกันอีก 300 วัน — เปลี่ยนเป็นปลดระวางแล้วแก้ไม่ได้ จึงตรวจจากอีเมลที่ไม่มี
     await waitHydrated(page);
