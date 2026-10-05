@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import { authFile, expectNoHorizontalOverflow } from './helpers';
 
 const PAGES = [
-  { path: '/monitoring', title: 'Monitoring & Event', group: 'DELIVER & SUPPORT', practice: 'Monitoring and Event Management', related: 'CMDB / Configuration' },
   { path: '/releases', title: 'Release Management', group: 'DESIGN & TRANSITION', practice: 'Release Management', related: 'Change Enablement' },
 ] as const;
 
@@ -26,15 +25,15 @@ test.describe('หน้าโมดูลที่ยังไม่พัฒ�
 
   test('คลิกจากเมนูด้านข้างได้ และลิงก์ที่เกี่ยวข้องพาไปหน้าที่ใช้งานได้จริง', async ({ page }) => {
     await page.goto('/');
-    await page.getByRole('navigation', { name: 'เมนูหลัก' }).getByRole('link', { name: 'Monitoring & Event' }).click();
-    await expect(page).toHaveURL(/\/monitoring$/);
-    await page.getByTestId('related').getByRole('link', { name: 'CMDB / Configuration' }).click();
-    await expect(page).toHaveURL(/\/cmdb$/);
+    await page.getByRole('navigation', { name: 'เมนูหลัก' }).getByRole('link', { name: 'Release Management' }).click();
+    await expect(page).toHaveURL(/\/releases$/);
+    await page.getByTestId('related').getByRole('link', { name: 'Change Enablement' }).click();
+    await expect(page).toHaveURL(/\/changes$/);
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();
   });
 
   test('พาธย่อยหรือพาธนอกเมนูเป็น 404 (ไม่ตอบเป็นหน้าโมดูลหลอก)', async ({ page }) => {
-    for (const p of ['/releases/REL-1', '/ไม่มีหน้านี้', '/monitoring/events', '/releases/x/y']) {
+    for (const p of ['/releases/REL-1', '/ไม่มีหน้านี้', '/releases/x/y']) {
       expect((await page.goto(p))?.status(), p).toBe(404);
     }
   });

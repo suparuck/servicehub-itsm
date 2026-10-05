@@ -12,6 +12,11 @@ describe('checkAccess', () => {
     expect(checkAccess('/reset-password-evil', null)).toEqual({ allow: false, redirect: '/login' });
     expect(checkAccess('/admin/email', null)).toEqual({ allow: false, redirect: '/login' });
   });
+  it('webhook เหตุการณ์ของระบบมอนิเตอร์เปิดที่ระดับ session (ใช้ Bearer token) แต่ไม่รวมพาธอื่นใต้ /api/monitoring', () => {
+    expect(checkAccess('/api/monitoring/events', null)).toEqual({ allow: true });
+    expect(checkAccess('/api/monitoring/events/x', null)).toEqual({ allow: false, redirect: '/login' });
+    expect(checkAccess('/api/monitoring', null)).toEqual({ allow: false, redirect: '/login' });
+  });
   it('ไม่ล็อกอิน → ส่งไป /login', () => {
     expect(checkAccess('/', null)).toEqual({ allow: false, redirect: '/login' });
     expect(checkAccess('/portal', undefined)).toEqual({ allow: false, redirect: '/login' });

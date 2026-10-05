@@ -174,6 +174,7 @@ model User {
   assetsHeld        Asset[]              @relation("AssetAssignee")
   improvementsOwned ImprovementItem[]    @relation("ImprovementOwner")
   assignmentRules   AssignmentRule[]     @relation("RuleAssignee")
+  eventsAcked       MonitoringEvent[]    @relation("EventAckedBy")
   resetTokens       PasswordResetToken[]
   changesRequested  Change[]             @relation("ChangeRequester")
 }
@@ -271,12 +272,13 @@ model ConfigurationItem {
   driftNote        String? // ข้อมูลไม่ตรงกับ Discovery (รอกระทบยอด)
   createdAt        DateTime         @default(now())
 
-  outgoing  CIRelationship[] @relation("RelSource")
-  incoming  CIRelationship[] @relation("RelTarget")
+  outgoing  CIRelationship[]  @relation("RelSource")
+  incoming  CIRelationship[]  @relation("RelTarget")
   incidents IncidentCI[]
   changes   ChangeCI[]
   asset     Asset?
   history   CIChangeLog[]
+  events    MonitoringEvent[]
 
   @@index([ciClass])
   @@index([lifecycle])
@@ -359,10 +361,11 @@ model Incident {
   resolvedAt    DateTime?
   closedAt      DateTime?
 
-  cis    IncidentCI[]
-  notes  WorkNote[]
-  timers SlaTimer[]
-  survey SurveyResponse?
+  cis              IncidentCI[]
+  notes            WorkNote[]
+  timers           SlaTimer[]
+  survey           SurveyResponse?
+  monitoringEvents MonitoringEvent[]
 
   @@index([status, priority])
   @@index([serviceId])
@@ -702,4 +705,61 @@ model CannedResponse {
   createdAt DateTime @default(now())
 
   @@index([active, sortOrder])
+}
+
+enum EventSeverity {
+  INFO // ข้อมูล (Information)
+  WARNING // เตือน (Warning)
+  CRITICAL // ผิดปกติ (Exception) — กระทบหรือใกล้กระทบบริการ
+}
+
+enum EventStatus {
+  OPEN
+  ACKNOWLEDGED
+  RESOLVED
+}
+
+// แหล่งเหตุการณ์ (ระบบมอนิเตอร์ภายนอก) — ยืนยันตัวตนด้วย token ที่เก็บเฉพาะแฮช SHA-256 (แสดงครั้งเดียวตอนสร้าง/หมุนเวียน)
+model MonitoringSource {
+  id           String            @id @default(cuid())
+  name         String            @unique
+  tokenHash    String            @unique
+  active       Boolean           @default(true)
+  autoIncident Boolean           @default(true) // CRITICAL → สร้าง Incident อัตโนมัติ
+  createdAt    DateTime          @default(now())
+  lastEventAt  DateTime?
+  events       MonitoringEvent[]
+}
+
+// เหตุการณ์จากการเฝ้าระวัง — เหตุการณ์ซ้ำ (แหล่ง + CI + ชื่อการตรวจ) ถูกรวมเป็นรายการเดียวที่นับจำนวนครั้ง
+model MonitoringEvent {
+  id                  String             @id @default(cuid())
+  sourceId            String
+  source              MonitoringSource   @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  dedupKey            String
+  check               String
+  ciId                String?
+  ci                  ConfigurationItem? @relation(fields: [ciId], references: [id], onDelete: SetNull)
+  ciRef               String? // ค่า ci ที่แหล่งส่งมา (เก็บไว้แม้จับคู่ CI ไม่ได้)
+  serviceCode         String?
+  severity            EventSeverity
+  status              EventStatus        @default(OPEN)
+  title               String
+  message             String?
+  firstSeenAt         DateTime           @default(now())
+  lastSeenAt          DateTime           @default(now())
+  occurrences         Int                @default(1)
+  ackedAt             DateTime?
+  ackedById           String?
+  ackedBy             User?              @relation("EventAckedBy", fields: [ackedById], references: [id], onDelete: SetNull)
+  resolvedAt          DateTime?
+  resolvedBy          String? // 'auto' (แหล่งแจ้งว่ากลับสู่ปกติ) หรือ id ผู้ใช้
+  incidentRequestedAt DateTime? // จองสิทธิ์สร้าง Incident (กันสร้างซ้ำเมื่อมีคำขอพร้อมกัน)
+  incidentId          String?
+  incident            Incident?          @relation(fields: [incidentId], references: [id], onDelete: SetNull)
+
+  @@index([status, severity])
+  @@index([sourceId, dedupKey, status])
+  @@index([ciId])
+  @@index([lastSeenAt])
 }

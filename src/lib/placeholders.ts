@@ -12,16 +12,6 @@ export interface PlaceholderInfo {
 
 export const PLACEHOLDERS: PlaceholderInfo[] = [
   {
-    href: '/monitoring',
-    practice: 'Monitoring and Event Management',
-    summary: 'รับเหตุการณ์จากระบบเฝ้าระวัง คัดกรอง และเปลี่ยนเป็น Incident เมื่อมีผลกระทบต่อบริการ',
-    planned: ['รับ event จากระบบมอนิเตอร์ภายนอก (webhook)', 'จัดกลุ่ม/ตัดเหตุการณ์ซ้ำ (correlation)', 'สร้าง Incident อัตโนมัติและผูกกับ CI ที่เกี่ยวข้อง', 'มุมมองสถานะสุขภาพของ CI ตามบริการ'],
-    related: [
-      { label: 'Incident Management', href: '/incidents', note: 'ปลายทางของเหตุการณ์ที่ต้องดำเนินการ' },
-      { label: 'CMDB / Configuration', href: '/cmdb', note: 'CI และแผนผังความสัมพันธ์ที่ใช้ประเมินผลกระทบ' },
-    ],
-  },
-  {
     href: '/releases',
     practice: 'Release Management',
     summary: 'รวม Change ที่เกี่ยวข้องเป็นรุ่นส่งมอบ วางแผน และติดตามการเปิดใช้งานสู่ production',

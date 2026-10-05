@@ -2,6 +2,7 @@
 // ข้อมูลที่เกี่ยวกับเวลา สร้างเทียบกับ "ตอนนี้" เพื่อให้ SLA/กำหนดการ Change ไม่ล้าสมัย
 import { PrismaClient, type Level, type IncidentStatus, type Priority } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { createHash, randomBytes } from 'node:crypto';
 import { calcPriority } from '../src/lib/priority';
 
 const prisma = new PrismaClient();
@@ -465,6 +466,26 @@ async function main() {
   await prisma.slaTimer.updateMany({
     where: { metric: 'RESOLVE', achievedAt: null, incident: { status: 'PENDING_USER' } },
     data: { pausedAt: now, state: 'PAUSED' },
+  });
+
+  // ── Monitoring: แหล่งเหตุการณ์ตัวอย่าง (token สุ่มทิ้ง — เทสต์สร้างแหล่งของตัวเองเพื่อรู้ token) และเหตุการณ์ตัวอย่าง ──
+  const monSource = await prisma.monitoringSource.create({ data: { name: 'Zabbix (ตัวอย่าง)', tokenHash: createHash('sha256').update(randomBytes(32)).digest('hex'), lastEventAt: minutesAgo(3) } });
+  const inc24817 = await prisma.incident.findUnique({ where: { seq: 24817 } });
+  const monEvents = [
+    { check: 'connection_pool_exhausted', key: 'erp-db-02', ci: 'ERP-DB-02', sev: 'CRITICAL' as const, svc: 'ERP', msg: 'Oracle processes ใช้ 1,498/1,500', n: 14, first: 95, last: 3, incidentId: inc24817?.id ?? null },
+    { check: 'cpu_high', key: 'fw-north-01', ci: 'FW-North-01', sev: 'WARNING' as const, svc: null, msg: 'CPU 91% ต่อเนื่อง 10 นาที', n: 6, first: 50, last: 7, incidentId: null },
+    { check: 'config_backup_done', key: 'sw-dc1-core01', ci: 'SW-DC1-CORE01', sev: 'INFO' as const, svc: null, msg: 'สำรองคอนฟิกสำเร็จ', n: 1, first: 240, last: 240, incidentId: null },
+  ];
+  for (const e of monEvents) {
+    await prisma.monitoringEvent.create({
+      data: {
+        sourceId: monSource.id, dedupKey: [e.ci, e.check, ''].map((x) => x.toLowerCase()).join('|'), check: e.check, ciId: ci[e.ci], ciRef: e.ci, serviceCode: e.svc, severity: e.sev,
+        title: `${e.check} — ${e.ci}`, message: e.msg, occurrences: e.n, firstSeenAt: minutesAgo(e.first), lastSeenAt: minutesAgo(e.last), incidentId: e.incidentId, incidentRequestedAt: e.incidentId ? minutesAgo(e.first) : null,
+      },
+    });
+  }
+  await prisma.monitoringEvent.create({
+    data: { sourceId: monSource.id, dedupKey: 'ws-prod-01|disk_full|', check: 'disk_full', ciRef: 'WS-PROD-01', severity: 'WARNING', status: 'RESOLVED', title: 'disk_full — WS-PROD-01', message: 'ดิสก์ใช้ 91%', occurrences: 3, firstSeenAt: minutesAgo(600), lastSeenAt: minutesAgo(420), resolvedAt: minutesAgo(400), resolvedBy: 'auto' },
   });
 
   // ── Service Desk: กฎมอบหมายอัตโนมัติและข้อความสำเร็จรูป ──

@@ -1,3 +1,4 @@
+import { purgeOldEvents } from '../monitoringService';
 import { purgeOldNotifications } from '../notificationService';
 import { processSlaAlerts } from './notify';
 
@@ -13,7 +14,11 @@ export function startSlaWatcher(intervalMs = 60_000) {
     running = true;
     try {
       await processSlaAlerts();
-      if (ticks++ % 60 === 0) await purgeOldNotifications(); // ทุก ~1 ชม. (และตอนเริ่ม)
+      if (ticks++ % 60 === 0) {
+        // ทุก ~1 ชม. (และตอนเริ่ม)
+        await purgeOldNotifications();
+        await purgeOldEvents();
+      }
     } catch (err) {
       console.error('[sla] watcher error', err instanceof Error ? err.message : err);
     } finally {
