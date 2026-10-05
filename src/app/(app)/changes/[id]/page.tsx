@@ -28,7 +28,7 @@ export default async function ChangeDetail({ params, searchParams }: { params: P
   if (seq === null) notFound();
   const change = await db.change.findUnique({
     where: { seq },
-    include: { service: true, problem: true, cis: { include: { ci: true } }, approvals: { include: { approver: true }, orderBy: { createdAt: 'asc' } } },
+    include: { service: true, problem: true, release: true, cis: { include: { ci: true } }, approvals: { include: { approver: true }, orderBy: { createdAt: 'asc' } } },
   });
   if (!change) notFound();
   const [user, activity, conflicts] = await Promise.all([getCurrentUser(), getAudit('CHANGE', change.id), conflictsFor(change.id)]);
@@ -78,10 +78,11 @@ export default async function ChangeDetail({ params, searchParams }: { params: P
               [t.window, `${thDateTime(change.windowStart)}${change.windowEnd ? ` – ${thWindow(change.windowEnd, null)} น.` : ''}`],
               [t.service, change.service?.name ?? '—'],
               [t.problem, change.problem ? `${formatDocNo('PRB', change.problem.seq)} · ${change.problem.title}` : '—'],
+              [th.release.releaseOf, change.release ? `${formatDocNo('REL', change.release.seq)} · ${change.release.name}` : '—'],
             ].map(([k, v]) => (
               <div key={k} className="flex flex-col gap-0.5 rounded-control bg-subtle px-3 py-2.5">
                 <dt className="text-xs text-muted">{k}</dt>
-                <dd className="m-0 text-sm font-semibold">{k === t.problem && change.problem ? <Link href={`/problems/${formatDocNo('PRB', change.problem.seq)}`} className="inline-flex min-h-[44px] items-center">{v}</Link> : v}</dd>
+                <dd className="m-0 text-sm font-semibold">{k === t.problem && change.problem ? <Link href={`/problems/${formatDocNo('PRB', change.problem.seq)}`} className="inline-flex min-h-[44px] items-center">{v}</Link> : k === th.release.releaseOf && change.release ? <Link href={`/releases/${formatDocNo('REL', change.release.seq)}`} className="inline-flex min-h-[44px] items-center">{v}</Link> : v}</dd>
               </div>
             ))}
           </dl>

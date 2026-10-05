@@ -175,6 +175,7 @@ model User {
   improvementsOwned ImprovementItem[]    @relation("ImprovementOwner")
   assignmentRules   AssignmentRule[]     @relation("RuleAssignee")
   eventsAcked       MonitoringEvent[]    @relation("EventAckedBy")
+  releasesOwned     Release[]            @relation("ReleaseOwner")
   resetTokens       PasswordResetToken[]
   changesRequested  Change[]             @relation("ChangeRequester")
 }
@@ -206,6 +207,7 @@ model Service {
   catalogItems CatalogItem[]
   improvements ImprovementItem[]
   rules        AssignmentRule[]
+  releases     Release[]
 }
 
 model ServiceOffering {
@@ -485,6 +487,8 @@ model Change {
   completedAt        DateTime?
   requesterId        String?
   requester          User?            @relation("ChangeRequester", fields: [requesterId], references: [id])
+  releaseId          String?
+  release            Release?         @relation(fields: [releaseId], references: [id], onDelete: SetNull)
   createdAt          DateTime         @default(now())
   cis                ChangeCI[]
   incidents          Incident[]
@@ -762,4 +766,39 @@ model MonitoringEvent {
   @@index([sourceId, dedupKey, status])
   @@index([ciId])
   @@index([lastSeenAt])
+}
+
+enum ReleaseStatus {
+  PLANNED // วางแผน — กำหนดขอบเขตและแพ็กเกจ Change
+  IN_BUILD // กำลังจัดเตรียม/ทดสอบ
+  READY // ผ่านเกณฑ์ Go/No-Go พร้อมเปิดใช้
+  DEPLOYING // กำลังเปิดใช้งานสู่ production
+  DEPLOYED // เปิดใช้งานสำเร็จ
+  ROLLED_BACK // ถอยกลับแล้ว
+  CANCELLED // ยกเลิก
+}
+
+// Release Management (ITIL 4): รวม Change ที่เกี่ยวข้องเป็นรุ่นส่งมอบเดียว วางแผน ตรวจความพร้อม เปิดใช้ และทบทวนหลังเปิดใช้
+model Release {
+  id           String        @id @default(cuid())
+  seq          Int           @unique @default(autoincrement()) // REL-####
+  name         String
+  version      String?
+  description  String?
+  status       ReleaseStatus @default(PLANNED)
+  ownerId      String?
+  owner        User?         @relation("ReleaseOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  serviceId    String?
+  service      Service?      @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  windowStart  DateTime?
+  windowEnd    DateTime?
+  deployPlan   String?
+  rollbackPlan String?
+  review       String? // ทบทวนหลังเปิดใช้ (Post-implementation review)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @default(now()) @updatedAt
+  completedAt  DateTime?
+  changes      Change[]
+
+  @@index([status])
 }

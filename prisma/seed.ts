@@ -241,6 +241,25 @@ async function main() {
     status: 'AWAITING_APPROVAL', cabApproval: 'CAB', serviceId: svc.HR, cis: { create: [{ ciId: ci['hr-app-prod (AKS)'] }] },
   });
 
+  // ── Release Management: รุ่นที่เปิดใช้แล้ว 1 รายการ (มี Change ที่เสร็จสิ้น + ทบทวนแล้ว), กำลังจัดเตรียม 1 รายการ (ผ่าน Go/No-Go), วางแผน 1 รายการ ──
+  const chg3350 = await mkChange(3350, 'อัปเดตเวอร์ชัน VPN client', 'STANDARD', 'LOW', bkk(-12, '22:00'), bkk(-12, '23:00'), { status: 'COMPLETED', serviceId: svc.VPN, outcome: 'อัปเดตสำเร็จ ไม่พบปัญหา', completedAt: bkk(-12, '23:00') });
+  const chg3370 = await prisma.change.findUniqueOrThrow({ where: { seq: 3370 } });
+  await prisma.release.create({
+    data: {
+      seq: 6, name: 'Release 2026.09 — VPN client', version: '2026.09', description: 'อัปเดตไคลเอนต์ VPN ให้รองรับการสลับเครือข่าย', status: 'DEPLOYED', ownerId: wanna, serviceId: svc.VPN,
+      windowStart: bkk(-12, '22:00'), windowEnd: bkk(-12, '23:00'), deployPlan: 'ปล่อยผ่านระบบกระจายซอฟต์แวร์เป็นกลุ่ม 10% → 100%', rollbackPlan: 'ย้อนกลับไปไคลเอนต์รุ่นก่อนผ่านระบบกระจายซอฟต์แวร์',
+      review: 'เปิดใช้ตามแผน ไม่มีเหตุขัดข้อง ผู้ใช้รายงานการหลุดของ VPN ลดลง', completedAt: bkk(-12, '23:30'), changes: { connect: [{ id: chg3350.id }] },
+    },
+  });
+  await prisma.release.create({
+    data: {
+      seq: 7, name: 'Release 2026.10 — เครือข่ายและ M365', version: '2026.10', description: 'รวมอัปเกรดเฟิร์มแวร์ไฟร์วอลล์สาขาและการเพิ่มผู้ใช้กลุ่มใหม่ใน M365', status: 'IN_BUILD', ownerId: wanna,
+      windowStart: bkk(2, '01:00'), windowEnd: bkk(2, '03:00'), deployPlan: '1) แจ้งสาขาล่วงหน้า 2) อัปเกรดเฟิร์มแวร์ตามลำดับสาขา 3) เพิ่มผู้ใช้ใน M365 4) ตรวจสอบการเชื่อมต่อ', rollbackPlan: 'ย้อนเฟิร์มแวร์ไฟร์วอลล์เป็นรุ่นเดิมและลบกลุ่มผู้ใช้ที่เพิ่ม',
+      changes: { connect: [{ id: chg3376.id }, { id: chg3370.id }] },
+    },
+  });
+  await prisma.release.create({ data: { seq: 8, name: 'Release 2026.11 — ย้าย HR ขึ้นคลาวด์', version: '2026.11', description: 'ย้ายระบบ HR ขึ้นคลาวด์ (เฟส 2) — รออนุมัติ CAB', status: 'PLANNED', ownerId: wanna, serviceId: svc.HR } });
+
   // การอนุมัติของ CAB/ECAB ตามสถานะของแต่ละ Change
   const approval = (changeId: string, board: string, approverId: string, decision: 'PENDING' | 'APPROVED' | 'REJECTED', comment?: string, minsAgo = 0) =>
     prisma.changeApproval.create({ data: { changeId, board, approverId, decision, comment: comment ?? null, decidedAt: decision === 'PENDING' ? null : minutesAgo(minsAgo) } });
@@ -535,7 +554,7 @@ async function main() {
   });
 
   // เลื่อน sequence ให้ต่อจากเลขสูงสุดที่ seed ไว้
-  for (const t of ['Incident', 'ServiceRequest', 'Problem', 'Change', 'KnowledgeArticle']) {
+  for (const t of ['Incident', 'ServiceRequest', 'Problem', 'Change', 'KnowledgeArticle', 'Release']) {
     await prisma.$executeRawUnsafe(
       `SELECT setval(pg_get_serial_sequence('"${t}"', 'seq'), (SELECT COALESCE(MAX(seq), 1) FROM "${t}"))`,
     );
