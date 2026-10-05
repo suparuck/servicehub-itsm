@@ -114,6 +114,7 @@ const samples: MailMessage[] = [
   { template: 'slaBreached', name: 'สมชาย', docNo: 'INC-1', title: 'เรื่อง', priority: 'P1 วิกฤต', overrun: '12 นาที', url: URL_ },
   { template: 'assetExpiring', name: 'สมชาย', tag: 'ASSET-NET-0121', assetName: 'SW-DC1-CORE01', kind: 'support', expires: '05/12/69', days: 60, url: URL_ },
   { template: 'licenseOverUse', name: 'สมชาย', tag: 'ASSET-LIC-0101', assetName: 'Adobe Creative Cloud', used: 52, qty: 50, url: URL_ },
+  { template: 'improvementOverdue', name: 'สมชาย', docNo: 'IMP-0002', title: 'Chatbot <b>รีเซ็ต</b>', target: '30/09/69', days: 5, step: 'ขั้นที่ 3/7 · อยากไปถึงไหน', url: URL_ },
   { template: 'releaseStatus', name: 'สมชาย', docNo: 'REL-0007', releaseName: 'Release 2026.10', event: 'ROLLED_BACK', reason: 'พบข้อผิดพลาด\nหลังอัปเกรด', window: '7 ต.ค. 01:00–03:00 น.', changes: 2, url: URL_ },
   { template: 'releaseOwner', name: 'สมชาย', docNo: 'REL-0007', releaseName: 'Release 2026.10', url: URL_ },
   { template: 'changeApprovalRequest', name: 'สมชาย', docNo: 'CHG-1', title: 'เรื่อง', type: 'Normal Change', board: 'CAB', window: '5 ต.ค. 01:00', url: URL_ },
@@ -158,6 +159,7 @@ describe('templates', () => {
   });
   it('หมวดการแจ้งเตือนผูกกับเทมเพลตถูกต้อง', () => {
     expect(TEMPLATE_META.slaBreached).toEqual({ critical: false, category: 'sla' });
+    expect(TEMPLATE_META.improvementOverdue).toEqual({ critical: false, category: 'assigned' });
     expect(TEMPLATE_META.releaseStatus).toEqual({ critical: false, category: 'myItems' });
     expect(TEMPLATE_META.releaseOwner).toEqual({ critical: false, category: 'assigned' });
     expect(TEMPLATE_META.assetExpiring).toEqual({ critical: false, category: 'assets' });

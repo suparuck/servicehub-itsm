@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canMoveImpStatus, isOverdue, isStep, needsReason, nextImpStatuses, validateComplete, validateImprovement, validateStepMove, type ImpFormInput, type StepContext } from '@/lib/improvement';
+import { canMoveImpStatus, daysOverdue, isOverdue, isStep, needsReason, nextImpStatuses, validateComplete, validateImprovement, validateStepMove, type ImpFormInput, type StepContext } from '@/lib/improvement';
 import { can } from '@/lib/permissions';
 import { formatDocNo, parseDocNo } from '@/lib/docno';
 
@@ -65,6 +65,22 @@ describe('isOverdue', () => {
     expect(isOverdue({ status: 'ON_HOLD', targetDate: new Date('2026-09-01T00:00:00Z') }, NOW)).toBe(false);
     expect(isOverdue({ status: 'DONE', targetDate: new Date('2026-09-01T00:00:00Z') }, NOW)).toBe(false);
     expect(isOverdue({ status: 'OPEN', targetDate: null }, NOW)).toBe(false);
+  });
+});
+
+describe('daysOverdue', () => {
+  const NOW = new Date('2026-10-05T05:00:00Z'); // 5 ต.ค. เวลาไทย
+  it('นับวันตามปฏิทินไทย: วันนี้ = 0, เมื่อวาน = 1, พรุ่งนี้ = -1', () => {
+    expect(daysOverdue(new Date('2026-10-04T17:00:00Z'), NOW)).toBe(0); // 5 ต.ค. 00:00 ไทย
+    expect(daysOverdue(new Date('2026-10-03T17:00:00Z'), NOW)).toBe(1);
+    expect(daysOverdue(new Date('2026-09-30T17:00:00Z'), NOW)).toBe(4); // 1 ต.ค. 00:00 ไทย
+    expect(daysOverdue(new Date('2026-10-05T17:00:00Z'), NOW)).toBe(-1);
+  });
+  it('สอดคล้องกับ isOverdue (เลย ⇔ มากกว่า 0 วันและยังเปิดอยู่)', () => {
+    for (const iso of ['2026-10-04T17:00:00Z', '2026-10-03T17:00:00Z', '2026-10-05T17:00:00Z']) {
+      const d = new Date(iso);
+      expect(isOverdue({ status: 'OPEN', targetDate: d }, NOW)).toBe(daysOverdue(d, NOW) > 0);
+    }
   });
 });
 

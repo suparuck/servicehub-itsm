@@ -22,6 +22,7 @@ export type MailMessage =
   | { template: 'slaBreached'; name: string; docNo: string; title: string; priority: string; overrun: string; url: string }
   | { template: 'assetExpiring'; name: string; tag: string; assetName: string; kind: 'support' | 'license'; expires: string; days: number; url: string }
   | { template: 'licenseOverUse'; name: string; tag: string; assetName: string; used: number; qty: number; url: string }
+  | { template: 'improvementOverdue'; name: string; docNo: string; title: string; target: string; days: number; step: string; url: string }
   | { template: 'releaseStatus'; name: string; docNo: string; releaseName: string; event: 'READY' | 'NO_GO' | 'DEPLOYING' | 'DEPLOYED' | 'ROLLED_BACK' | 'CANCELLED'; reason?: string; window?: string; changes: number; url: string }
   | { template: 'releaseOwner'; name: string; docNo: string; releaseName: string; window?: string; url: string }
   | { template: 'changeApprovalRequest'; name: string; docNo: string; title: string; type: string; board: string; window: string; url: string }
@@ -46,6 +47,7 @@ export const TEMPLATE_META: Record<TemplateName, { critical: true } | { critical
   incidentResolved: { critical: false, category: 'myItems' },
   slaNearBreach: { critical: false, category: 'sla' },
   slaBreached: { critical: false, category: 'sla' },
+  improvementOverdue: { critical: false, category: 'assigned' },
   releaseStatus: { critical: false, category: 'myItems' },
   releaseOwner: { critical: false, category: 'assigned' },
   assetExpiring: { critical: false, category: 'assets' },
@@ -256,6 +258,15 @@ function buildDoc(m: MailMessage): Doc {
         paragraphs: ['Incident ต่อไปนี้เกินกำหนดแก้ไขตาม SLA แล้ว'],
         facts: [['เลขที่', m.docNo], ['เรื่อง', m.title], ['ลำดับความสำคัญ', m.priority], ['เกินกำหนด', m.overrun]],
         cta: { label: 'เปิดดู Incident', url: m.url },
+      };
+    case 'improvementOverdue':
+      return {
+        subject: `[Improvement] เลยกำหนด ${m.days} วัน: ${m.docNo} ${m.title}`,
+        heading: 'รายการปรับปรุงเลยกำหนด',
+        greeting: hi(m.name),
+        paragraphs: ['รายการปรับปรุงต่อไปนี้ยังไม่บรรลุเป้าหมายและเลยวันเป้าหมายแล้ว โปรดเร่งดำเนินการ ปรับวันเป้าหมายให้สมจริง หรือพักไว้พร้อมเหตุผล'],
+        facts: [['เลขที่', m.docNo], ['รายการ', m.title], ['วันเป้าหมาย', m.target], ['เลยมาแล้ว', `${m.days} วัน`], ['ขั้นตอนปัจจุบัน', m.step]],
+        cta: { label: 'เปิดดูรายการปรับปรุง', url: m.url },
       };
     case 'releaseStatus': {
       const T = {

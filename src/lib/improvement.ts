@@ -57,6 +57,12 @@ export function isOverdue(i: { status: ImpStatus; targetDate: Date | null }, now
   return i.status === 'OPEN' && !!i.targetDate && bangkokYmd(i.targetDate) < bangkokYmd(now);
 }
 
+/** จำนวนวัน (ตามปฏิทินไทย) ที่เลยวันเป้าหมายมาแล้ว — 0 หรือติดลบ = ยังไม่เลย (วันครบกำหนดวันนี้ = 0) */
+export function daysOverdue(target: Date, now = new Date()): number {
+  const day = (d: Date) => Math.floor((d.getTime() + 7 * 3_600_000) / 86_400_000);
+  return day(now) - day(target);
+}
+
 // ── ตรวจข้อมูลฟอร์ม ──
 export interface ImpFormInput {
   title: string;

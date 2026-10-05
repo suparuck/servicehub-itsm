@@ -9,6 +9,7 @@ import { summarize, TEMPLATE_META, type MailMessage, type NotifyCategory } from 
 import { formatRemaining, thDateShort, thWindow } from '../datetime';
 import { timerView } from '../sla';
 import { alertStep, daysLeft, licenseState } from '../asset';
+import { daysOverdue } from '../improvement';
 import { bangkokYmd } from '../change';
 
 // ทุกฟังก์ชันที่นี่ "ไม่โยน error" — การแจ้งเตือนล้มเหลวต้องไม่ทำให้งานหลัก (บันทึก Incident, อนุมัติ ฯลฯ) ล้มไปด้วย
@@ -274,3 +275,32 @@ export const notifyReleaseOwner = (releaseId: string, actorId: string | null) =>
     if (!r?.ownerId) return;
     await send(await usersByIds([r.ownerId]), 'assigned', actorId, (u) => ({ template: 'releaseOwner', name: u.name, docNo: formatDocNo('REL', r.seq), releaseName: r.name, window: relWindow(r), url: relUrl(r.seq) }));
   });
+
+// ── Continual Improvement: เลยกำหนด ──
+
+/**
+ * รายการปรับปรุงที่ยังเปิดอยู่และเลยวันเป้าหมาย → แจ้งเจ้าของ (ไม่มีเจ้าของ → หัวหน้าทีมและผู้ดูแล)
+ * ส่งครั้งเดียวต่อวันเป้าหมาย (กุญแจรวมวันที่ไว้ เลื่อนวันเป้าหมายแล้วเลยอีกครั้งจึงแจ้งใหม่) · ไม่โยน error
+ */
+export const checkImprovementAlert = (id: string, now = new Date()) =>
+  safely('improvementOverdue', async () => {
+    const i = await db.improvementItem.findUnique({ where: { id } });
+    if (!i || i.status !== 'OPEN' || !i.targetDate) return;
+    const days = daysOverdue(i.targetDate, now);
+    if (days <= 0) return;
+    const users = i.ownerId ? await usersByIds([i.ownerId]) : await usersByRoles(['RESOLVER_GROUP_LEAD', 'ADMIN']);
+    const docNo = formatDocNo('IMP', i.seq);
+    const key = `imp:${i.id}:${bangkokYmd(i.targetDate)}:overdue`;
+    const step = th.dashboard.improveSteps[i.step - 1];
+    await send(users, 'assigned', null, (u) => ({
+      template: 'improvementOverdue', name: u.name, docNo, title: i.title, target: thDateShort(i.targetDate as Date), days, step: th.improvement.stepOf(i.step, step), url: absoluteUrl(`/improvement/${docNo}`),
+    }), (u) => `${key}:${u.id}`);
+  });
+
+/** ตรวจรายการที่เลยกำหนดทั้งหมด (เรียกเป็นรอบจาก worker) — คืนจำนวนที่ตรวจ */
+export async function processImprovementAlerts(now = new Date()): Promise<number> {
+  const today = new Date(Math.floor((now.getTime() + 7 * 3_600_000) / 86_400_000) * 86_400_000 - 7 * 3_600_000); // 00:00 เวลาไทยของวันนี้
+  const rows = await db.improvementItem.findMany({ where: { status: 'OPEN', targetDate: { lt: today } }, select: { id: true } });
+  for (const r of rows) await checkImprovementAlert(r.id, now);
+  return rows.length;
+}

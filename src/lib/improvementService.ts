@@ -5,6 +5,7 @@ import { db } from './db';
 import { parseDocNo } from './docno';
 import { DomainError } from './errors';
 import { canMoveImpStatus, isOverdue, isStep, needsReason, validateComplete, validateImprovement, validateStepMove, type ImpFormInput } from './improvement';
+import { checkImprovementAlert } from './mail/notify';
 import { assertCan, type Role } from './permissions';
 
 export class ImprovementError extends DomainError {}
@@ -81,6 +82,7 @@ export async function createImprovement(actor: Actor, input: ImpFormInput) {
   const max = await db.improvementItem.aggregate({ _max: { sortOrder: true } });
   const it = await db.improvementItem.create({ data: { ...clean, step: 1, sortOrder: (max._max.sortOrder ?? 0) + 1 } });
   await logAudit('IMPROVEMENT', it.id, actor.id, `เสนอรายการปรับปรุง “${it.title}”`);
+  await checkImprovementAlert(it.id);
   return it;
 }
 
@@ -116,6 +118,7 @@ export async function updateImprovement(actor: Actor, seq: number, input: ImpFor
   if (!notes.length) return;
   await db.improvementItem.update({ where: { seq }, data: clean });
   await logAudit('IMPROVEMENT', cur.id, actor.id, `แก้ไข: ${notes.join(' · ')}`);
+  await checkImprovementAlert(cur.id);
 }
 
 /** เดินหน้า/ย้อนขั้นตามโมเดล 7 ขั้น (ตรวจประตูข้อมูลที่ต้องมีก่อนไปขั้นถัดไปจากค่าในฐานข้อมูล ไม่ใช่ค่าจากฟอร์ม) */
