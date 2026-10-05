@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, DataTable, StatusBadge, type Column, type Tone } from '@/components/ui';
 import { th } from '@/i18n/th';
-import { ASSET_CLASSES, licenseState, supportState, type AssetStatus } from '@/lib/asset';
+import { ASSET_CLASSES, expiringWindow, licenseState, supportState, type AssetStatus } from '@/lib/asset';
 import { assetSummary, listAssets } from '@/lib/assetService';
+import { getAssetAlertDays } from '@/lib/settingsService';
 import { getCurrentUser } from '@/lib/currentUser';
 import { thDateShort } from '@/lib/datetime';
 import { can, type Role } from '@/lib/permissions';
@@ -18,7 +19,8 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
   const sp = await searchParams;
   const t = th.asset;
   const user = await getCurrentUser();
-  const [rows, sum] = await Promise.all([listAssets(sp), assetSummary()]);
+  const [rows, sum, alertDays] = await Promise.all([listAssets(sp), assetSummary(), getAssetAlertDays()]);
+  const windowDays = expiringWindow(alertDays);
   type Row = (typeof rows)[number];
   const now = new Date();
   const qs = new URLSearchParams(Object.entries(sp).filter(([, v]) => v) as [string, string][]).toString();
@@ -46,7 +48,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
           if (ls === 'OVER' || ls === 'NEAR') return <StatusBadge tone={ls === 'OVER' ? 'critical' : 'warn'}>{t.license[ls]}</StatusBadge>;
         }
         if (r.status === 'RETIRED') return <span className="text-[13px] text-muted">—</span>;
-        const s = supportState(r.supportUntil, now);
+        const s = supportState(r.supportUntil, now, windowDays);
         return s === 'NONE' ? <span className="text-[13px] text-muted">—</span> : <StatusBadge tone={SUPPORT_TONE[s]}>{t.support[s]}{r.supportUntil && s !== 'ACTIVE' ? ` · ${thDateShort(r.supportUntil)}` : ''}</StatusBadge>;
       },
     },
@@ -94,7 +96,7 @@ export default async function AssetsPage({ searchParams }: { searchParams: Promi
           <label className="flex flex-col gap-1 text-[13px] text-muted">{t.filterSupport}
             <select name="support" defaultValue={sp.support ?? ''} className={control}>
               <option value="">{t.allSupport}</option>
-              <option value="expiring">{t.supportExpiring}</option>
+              <option value="expiring">{t.supportExpiring(windowDays)}</option>
               <option value="expired">{t.supportExpired}</option>
             </select>
           </label>

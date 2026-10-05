@@ -4,8 +4,9 @@ import { ActivityLog } from '@/components/ActivityLog';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, StatusBadge, type Tone } from '@/components/ui';
 import { th } from '@/i18n/th';
-import { daysLeft, isLicenseClass, licenseState, nextStatuses, supportState, type AssetStatus } from '@/lib/asset';
+import { daysLeft, expiringWindow, isLicenseClass, licenseState, nextStatuses, supportState, type AssetStatus } from '@/lib/asset';
 import { assignableUsers, getAsset } from '@/lib/assetService';
+import { getAssetAlertDays } from '@/lib/settingsService';
 import { getAudit } from '@/lib/audit';
 import { bangkokYmd } from '@/lib/change';
 import { getCurrentUser } from '@/lib/currentUser';
@@ -34,7 +35,7 @@ export default async function AssetDetail({ params, searchParams }: { params: Pr
   const editable = manage && !retired;
   const next = nextStatuses(a.status);
   const now = new Date();
-  const sState = retired ? 'NONE' : supportState(a.supportUntil, now);
+  const sState = retired ? 'NONE' : supportState(a.supportUntil, now, expiringWindow(await getAssetAlertDays()));
   const lState = licenseState(a.licenseQty, a.licenseUsed);
 
   return (

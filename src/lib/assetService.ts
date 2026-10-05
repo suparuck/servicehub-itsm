@@ -1,10 +1,11 @@
 import type { AssetStatus, CiClass, Prisma } from '@prisma/client';
 import { th } from '@/i18n/th';
-import { ASSET_CLASSES, canMoveStatus, isAssetClass, isLicenseClass, licenseState, nextAssetTag, supportState, validateAsset, EXPIRING_DAYS, type AssetFormInput } from './asset';
+import { ASSET_CLASSES, canMoveStatus, isAssetClass, isLicenseClass, licenseState, nextAssetTag, supportState, validateAsset, expiringWindow, type AssetFormInput } from './asset';
 import { logAudit } from './audit';
 import { db } from './db';
 import { DomainError } from './errors';
 import { checkAssetAlerts } from './mail/notify';
+import { getAssetAlertDays } from './settingsService';
 import { assertCan, type Role } from './permissions';
 
 export class AssetError extends DomainError {}
@@ -24,7 +25,7 @@ export interface AssetFilters {
 
 const STATUSES: AssetStatus[] = ['ORDERED', 'IN_STOCK', 'IN_USE', 'IN_REPAIR', 'RETIRED'];
 
-function whereOf(f: AssetFilters, now = new Date()): Prisma.AssetWhereInput {
+function whereOf(f: AssetFilters, now = new Date(), windowDays = 90): Prisma.AssetWhereInput {
   const and: Prisma.AssetWhereInput[] = [];
   const q = f.q?.trim();
   if (q) {
@@ -45,7 +46,7 @@ function whereOf(f: AssetFilters, now = new Date()): Prisma.AssetWhereInput {
   // ใกล้หมด/หมดแล้ว ใช้ขอบเขตวันเดียวกับ supportState (เวลาไทย) — สินทรัพย์ที่ปลดระวางแล้วไม่นับ
   const dayStart = new Date(Math.floor((now.getTime() + 7 * 3_600_000) / DAY) * DAY - 7 * 3_600_000);
   if (f.support === 'expired') and.push({ status: { not: 'RETIRED' }, supportUntil: { lt: dayStart } });
-  if (f.support === 'expiring') and.push({ status: { not: 'RETIRED' }, supportUntil: { gte: dayStart, lt: new Date(dayStart.getTime() + (EXPIRING_DAYS + 1) * DAY) } });
+  if (f.support === 'expiring') and.push({ status: { not: 'RETIRED' }, supportUntil: { gte: dayStart, lt: new Date(dayStart.getTime() + (windowDays + 1) * DAY) } });
   if (f.mine) and.push({ assignedToId: f.mine });
   return and.length ? { AND: and } : {};
 }
@@ -53,10 +54,12 @@ function whereOf(f: AssetFilters, now = new Date()): Prisma.AssetWhereInput {
 const include = { ci: { select: { ciId: true, name: true, ciClass: true, classLabel: true, lifecycle: true } }, assignedTo: { select: { id: true, name: true } } } satisfies Prisma.AssetInclude;
 
 export async function listAssets(f: AssetFilters = {}, limit = 500) {
-  return db.asset.findMany({ where: whereOf(f), include, orderBy: { assetTag: 'asc' }, take: limit });
+  const windowDays = expiringWindow(await getAssetAlertDays()); // กรอบ "ใกล้หมด" ตามเกณฑ์ที่ผู้ดูแลตั้ง
+  return db.asset.findMany({ where: whereOf(f, new Date(), windowDays), include, orderBy: { assetTag: 'asc' }, take: limit });
 }
 
 export async function assetSummary(now = new Date()) {
+  const windowDays = expiringWindow(await getAssetAlertDays());
   const [all, licenses] = await Promise.all([
     db.asset.findMany({ select: { status: true, supportUntil: true } }),
     db.asset.findMany({ where: { ci: { ciClass: 'SOFTWARE_LICENSE' }, status: { not: 'RETIRED' } }, select: { licenseQty: true, licenseUsed: true } }),
@@ -68,8 +71,8 @@ export async function assetSummary(now = new Date()) {
     inUse: by('IN_USE'),
     inStock: by('IN_STOCK'),
     inRepair: by('IN_REPAIR'),
-    expiring: active.filter((a) => supportState(a.supportUntil, now) === 'EXPIRING').length,
-    expired: active.filter((a) => supportState(a.supportUntil, now) === 'EXPIRED').length,
+    expiring: active.filter((a) => supportState(a.supportUntil, now, windowDays) === 'EXPIRING').length,
+    expired: active.filter((a) => supportState(a.supportUntil, now, windowDays) === 'EXPIRED').length,
     licenseOver: licenses.filter((l) => licenseState(l.licenseQty, l.licenseUsed) === 'OVER').length,
   };
 }

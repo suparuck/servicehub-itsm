@@ -38,11 +38,11 @@ const DAY = 86_400_000;
 const bkkDay = (d: Date) => Math.floor((d.getTime() + 7 * 3_600_000) / DAY);
 
 /** วันที่ตามเวลาไทย: หมดอายุวันนี้ยังถือว่าใช้ได้ถึงสิ้นวัน; ≤ 90 วัน = ใกล้หมด */
-export function supportState(until: Date | null | undefined, now = new Date()): SupportState {
+export function supportState(until: Date | null | undefined, now = new Date(), window = EXPIRING_DAYS): SupportState {
   if (!until) return 'NONE';
   const left = bkkDay(until) - bkkDay(now);
   if (left < 0) return 'EXPIRED';
-  return left <= EXPIRING_DAYS ? 'EXPIRING' : 'ACTIVE';
+  return left <= window ? 'EXPIRING' : 'ACTIVE';
 }
 
 export const daysLeft = (until: Date, now = new Date()) => bkkDay(until) - bkkDay(now);
@@ -51,11 +51,36 @@ export const daysLeft = (until: Date, now = new Date()) => bkkDay(until) - bkkDa
  * ขั้นของการแจ้งเตือนวันหมดอายุ: เตือนเมื่อเหลือ ≤ 90 / ≤ 30 / ≤ 7 วัน และเมื่อหมดแล้ว (คืน 0 ตอนหมดอายุ/เกินกำหนด)
  * คืน null เมื่อยังเหลือมากกว่า 90 วัน — แต่ละขั้นส่งครั้งเดียวต่อวันหมดอายุ (กุญแจกันซ้ำรวมวันหมดอายุไว้ ต่ออายุแล้วเริ่มนับใหม่)
  */
-export const ALERT_STEPS = [90, 30, 7] as const;
-export function alertStep(days: number): 90 | 30 | 7 | 0 | null {
+export const DEFAULT_ALERT_DAYS = [90, 30, 7];
+export const ALERT_STEPS = DEFAULT_ALERT_DAYS;
+/** steps ต้องเรียงมากไปน้อย (ได้จาก parseAlertDays) — ขั้นปัจจุบัน = ขั้นที่น้อยที่สุดที่ยังมากกว่าหรือเท่ากับจำนวนวันที่เหลือ */
+export function alertStep(days: number, steps: number[] = DEFAULT_ALERT_DAYS): number | null {
   if (days < 0) return 0;
-  for (const s of [7, 30, 90] as const) if (days <= s) return s;
-  return null;
+  let found: number | null = null;
+  for (const s of steps) if (days <= s && (found === null || s < found)) found = s;
+  return found;
+}
+
+/** กรอบ "ใกล้หมด" ที่แสดงในหน้าสินทรัพย์ = ขั้นแจ้งเตือนที่ไกลที่สุด (เตือนตั้งแต่เมื่อไหร่ ก็ถือว่าใกล้หมดตั้งแต่นั้น) */
+export const expiringWindow = (steps: number[]) => (steps.length ? Math.max(...steps) : EXPIRING_DAYS);
+
+export const MAX_ALERT_DAYS = 365;
+export const MAX_ALERT_STEPS = 5;
+
+/** แปลงข้อความเกณฑ์วัน (คั่นด้วย , ; ช่องว่าง) เป็นรายการเรียงมากไปน้อย — จำนวนเต็ม 1–365 ไม่ซ้ำ 1–5 ค่า */
+export function parseAlertDays(input: string): { ok: true; days: number[] } | { ok: false; error: string } {
+  const parts = input.split(/[\s,;，、]+/).map((p) => p.trim()).filter(Boolean);
+  if (parts.length === 0) return { ok: false, error: 'กรุณาระบุจำนวนวันอย่างน้อย 1 ค่า (เช่น 90, 30, 7)' };
+  const nums: number[] = [];
+  for (const p of parts) {
+    if (!/^\d+$/.test(p)) return { ok: false, error: `“${p.slice(0, 20)}” ไม่ใช่จำนวนเต็มวัน` };
+    const n = Number(p);
+    if (n < 1 || n > MAX_ALERT_DAYS) return { ok: false, error: `จำนวนวันต้องอยู่ระหว่าง 1 ถึง ${MAX_ALERT_DAYS} (พบ ${p.slice(0, 20)})` };
+    nums.push(n);
+  }
+  const days = [...new Set(nums)].sort((a, b) => b - a);
+  if (days.length > MAX_ALERT_STEPS) return { ok: false, error: `ตั้งได้ไม่เกิน ${MAX_ALERT_STEPS} ค่า` };
+  return { ok: true, days };
 }
 
 // ── ไลเซนส์ ──

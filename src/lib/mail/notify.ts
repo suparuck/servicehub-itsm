@@ -10,6 +10,7 @@ import { formatRemaining, thDateShort, thWindow } from '../datetime';
 import { timerView } from '../sla';
 import { alertStep, daysLeft, licenseState } from '../asset';
 import { daysOverdue } from '../improvement';
+import { getAssetAlertDays } from '../settingsService';
 import { bangkokYmd } from '../change';
 
 // ทุกฟังก์ชันที่นี่ "ไม่โยน error" — การแจ้งเตือนล้มเหลวต้องไม่ทำให้งานหลัก (บันทึก Incident, อนุมัติ ฯลฯ) ล้มไปด้วย
@@ -221,7 +222,7 @@ export const checkAssetAlerts = (assetId: string, now = new Date()) =>
     const license = a.ci.ciClass === 'SOFTWARE_LICENSE';
     if (a.supportUntil) {
       const days = daysLeft(a.supportUntil, now);
-      const step = alertStep(days);
+      const step = alertStep(days, await getAssetAlertDays()); // เกณฑ์วันที่ผู้ดูแลตั้ง (ค่าเริ่มต้น 90/30/7)
       if (step !== null) {
         const key = `asset:${a.id}:${bangkokYmd(a.supportUntil)}:${step}`;
         await send(users, 'assets', null, (u) => ({ template: 'assetExpiring', name: u.name, tag: a.assetTag, assetName: a.ci.name, kind: license ? 'license' : 'support', expires: thDateShort(a.supportUntil as Date), days, url }), (u) => `${key}:${u.id}`);
@@ -236,7 +237,8 @@ export const checkAssetAlerts = (assetId: string, now = new Date()) =>
 
 /** ตรวจสินทรัพย์ทั้งหมดที่เข้าเกณฑ์ (ใกล้หมด/หมดแล้ว/ไลเซนส์) — เรียกเป็นรอบจาก worker; คืนจำนวนที่ตรวจ */
 export async function processAssetAlerts(now = new Date()): Promise<number> {
-  const horizon = new Date(now.getTime() + 92 * 86_400_000);
+  const steps = await getAssetAlertDays();
+  const horizon = new Date(now.getTime() + (Math.max(...steps) + 2) * 86_400_000);
   const rows = await db.asset.findMany({
     where: { status: { not: 'RETIRED' }, OR: [{ supportUntil: { lte: horizon } }, { licenseQty: { not: null }, licenseUsed: { not: null } }] },
     select: { id: true },

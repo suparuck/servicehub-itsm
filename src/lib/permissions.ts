@@ -22,7 +22,8 @@ export type Action =
   | 'improvement.manage'
   | 'servicedesk.manage'
   | 'monitoring.admin'
-  | 'release.manage';
+  | 'release.manage'
+  | 'settings.manage';
 
 const RULES: Record<Action, Role[]> = {
   'problem.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'ADMIN'],
@@ -37,6 +38,7 @@ const RULES: Record<Action, Role[]> = {
   'incident.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'CAB_MEMBER', 'CONFIG_MANAGER', 'ADMIN'],
   'cmdb.manage': ['AGENT', 'RESOLVER_GROUP_LEAD', 'CONFIG_MANAGER', 'ADMIN'],
   'user.manage': ['ADMIN'], // จัดการบัญชีผู้ใช้/บทบาท/รีเซ็ตรหัสผ่าน
+  'settings.manage': ['ADMIN'], // ค่าตั้งระบบ เช่น เกณฑ์วันแจ้งเตือน
   'release.manage': ['RESOLVER_GROUP_LEAD', 'CHANGE_MANAGER', 'ADMIN'], // วางแผน แพ็กเกจ Change ตัดสิน Go/No-Go และเปิดใช้ Release (ระดับเดียวกับ change.manage)
   'monitoring.admin': ['ADMIN', 'CONFIG_MANAGER'], // แหล่งเหตุการณ์ (token ของระบบมอนิเตอร์)
   'servicedesk.manage': ['RESOLVER_GROUP_LEAD', 'ADMIN'], // กฎมอบหมายอัตโนมัติ ข้อความสำเร็จรูป และมอบหมายงานให้ผู้อื่น

@@ -803,3 +803,11 @@ model Release {
 
   @@index([status])
 }
+
+// ค่าตั้งระบบแบบ key/value (JSON) — เช่น เกณฑ์วันแจ้งเตือนประกัน/ไลเซนส์ใกล้หมด (assetAlertDays)
+model AppSetting {
+  key         String   @id
+  value       Json
+  updatedAt   DateTime @default(now()) @updatedAt
+  updatedById String?
+}

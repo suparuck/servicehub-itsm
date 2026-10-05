@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALERT_STEPS, ASSET_CLASSES, alertStep, canMoveStatus, csvCell, daysLeft, isAssetClass, licenseState, nextAssetTag, nextStatuses, supportState, toCsv, validateAsset, type AssetFormInput } from '@/lib/asset';
+import { ALERT_STEPS, ASSET_CLASSES, DEFAULT_ALERT_DAYS, alertStep, expiringWindow, parseAlertDays, canMoveStatus, csvCell, daysLeft, isAssetClass, licenseState, nextAssetTag, nextStatuses, supportState, toCsv, validateAsset, type AssetFormInput } from '@/lib/asset';
 import { can } from '@/lib/permissions';
 
 const blank: AssetFormInput = { vendor: '', serialNo: '', location: '', costBaht: '', purchasedAt: '', supportUntil: '', licenseQty: '', licenseUsed: '' };
@@ -62,6 +62,46 @@ describe('alertStep (ขั้นแจ้งเตือนวันหมด�
   it('สินทรัพย์ที่เพิ่งขึ้นทะเบียนใกล้หมดแล้ว ได้เฉพาะขั้นปัจจุบัน (ไม่ย้อนแจ้งขั้นที่ผ่านมาแล้ว)', () => {
     // เหลือ 5 วัน → ขั้น 7 เท่านั้น ไม่ใช่ 90 และ 30
     expect(alertStep(5)).toBe(7);
+  });
+});
+
+describe('เกณฑ์วันแจ้งเตือนที่ตั้งเองได้', () => {
+  it('alertStep รับเกณฑ์ใหม่: ใช้ขั้นที่ใกล้ที่สุดที่ยังครอบคลุม; เกินขั้นไกลสุด = ยังไม่แจ้ง', () => {
+    expect(alertStep(50, [60, 14])).toBe(60);
+    expect(alertStep(14, [60, 14])).toBe(14);
+    expect(alertStep(15, [60, 14])).toBe(60);
+    expect(alertStep(61, [60, 14])).toBeNull();
+    expect(alertStep(-1, [60, 14])).toBe(0);
+    expect(alertStep(10, [30])).toBe(30);
+    expect(alertStep(31, [30])).toBeNull();
+    expect(alertStep(10)).toBe(30); // ค่าเริ่มต้น 90/30/7
+  });
+  it('alertStep ไม่ขึ้นกับลำดับของรายการที่ส่งมา', () => {
+    expect(alertStep(20, [7, 90, 30])).toBe(30);
+  });
+  it('กรอบ "ใกล้หมด" = ขั้นที่ไกลที่สุด; รายการว่างถอยเป็น 90', () => {
+    expect(expiringWindow([60, 14])).toBe(60);
+    expect(expiringWindow(DEFAULT_ALERT_DAYS)).toBe(90);
+    expect(expiringWindow([])).toBe(90);
+  });
+  it('supportState ใช้กรอบที่กำหนด', () => {
+    expect(supportState(new Date('2026-11-24T05:00:00Z'), NOW, 60)).toBe('EXPIRING'); // 51 วัน
+    expect(supportState(new Date('2026-12-14T05:00:00Z'), NOW, 60)).toBe('ACTIVE'); // 71 วัน
+    expect(supportState(new Date('2026-12-14T05:00:00Z'), NOW, 90)).toBe('EXPIRING');
+  });
+  it('parseAlertDays: คั่นได้หลายแบบ เรียงมากไปน้อย ตัดค่าซ้ำ', () => {
+    expect(parseAlertDays('90, 30, 7')).toEqual({ ok: true, days: [90, 30, 7] });
+    expect(parseAlertDays('7 30;90，14、60')).toEqual({ ok: true, days: [90, 60, 30, 14, 7] });
+    expect(parseAlertDays(' 30,30 ,30')).toEqual({ ok: true, days: [30] });
+    expect(parseAlertDays('365')).toEqual({ ok: true, days: [365] });
+  });
+  it('parseAlertDays: ปฏิเสธค่าว่าง ไม่ใช่จำนวนเต็ม นอกช่วง และเกิน 5 ค่า', () => {
+    for (const bad of ['', '  ', ',', 'abc', '30, x', '1.5', '-5', '0', '366', '1e2', '30d', '1,2,3,4,5,6']) expect(parseAlertDays(bad).ok, JSON.stringify(bad)).toBe(false);
+    expect(parseAlertDays('1,2,3,4,5').ok).toBe(true);
+  });
+  it('สิทธิ์ settings.manage เฉพาะผู้ดูแล', () => {
+    expect(can('ADMIN', 'settings.manage')).toBe(true);
+    for (const r of ['CONFIG_MANAGER', 'RESOLVER_GROUP_LEAD', 'AGENT', 'END_USER'] as const) expect(can(r, 'settings.manage'), r).toBe(false);
   });
 });
 
