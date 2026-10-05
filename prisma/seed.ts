@@ -467,6 +467,16 @@ async function main() {
     data: { pausedAt: now, state: 'PAUSED' },
   });
 
+  // ── Service Desk: กฎมอบหมายอัตโนมัติและข้อความสำเร็จรูป ──
+  await prisma.assignmentRule.create({ data: { name: 'ERP → Application Support', serviceId: svc.ERP, groupId: group['Application Support'], assigneeId: thanaphon, sortOrder: 0 } });
+  await prisma.assignmentRule.create({ data: { name: 'ค่าเริ่มต้น → Service Desk L1', serviceId: null, groupId: group['Service Desk L1'], sortOrder: 99 } });
+  const macros: [string, string][] = [
+    ['ยืนยันรับเรื่อง', 'เรียนคุณ{{ชื่อ}}\nทีม IT ได้รับเรื่อง {{เลขที่}} ของคุณแล้ว และกำลังตรวจสอบ จะแจ้งความคืบหน้าให้ทราบอีกครั้ง\n— {{เจ้าหน้าที่}}'],
+    ['ขอข้อมูลเพิ่มเติม', 'เรียนคุณ{{ชื่อ}}\nเพื่อดำเนินการเรื่อง {{เลขที่}} ต่อ ขอความกรุณาแจ้งข้อมูลเพิ่มเติม: ข้อความแสดงข้อผิดพลาด (ถ้ามี) และเวลาที่เกิดปัญหา\n— {{เจ้าหน้าที่}}'],
+    ['แจ้งผลแก้ไขเบื้องต้น', 'เรียนคุณ{{ชื่อ}}\nเรื่อง {{เลขที่}} ได้รับการแก้ไขเบื้องต้นแล้ว กรุณาลองใช้งานอีกครั้ง หากยังพบปัญหาให้ตอบกลับในเรื่องนี้\n— {{เจ้าหน้าที่}}'],
+  ];
+  for (const [i, [title, body]] of macros.entries()) await prisma.cannedResponse.create({ data: { title, body, sortOrder: i } });
+
   // ── Continual Improvement ──────────────────────────────────────
   const imps = [
     { title: 'ลด MTTR ของ P2 ลง 20% ด้วย Swarming', step: 5, benefit: 'HIGH' as const, owner: wanna, problemId: prb412.id, serviceId: svc.ERP, due: bkk(30, '00:00'),

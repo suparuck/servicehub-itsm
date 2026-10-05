@@ -8,13 +8,14 @@ import type { Role } from '@/lib/permissions';
 export const dynamic = 'force-dynamic';
 
 async function getBadges(): Promise<Record<string, string>> {
-  const [open, snap, improving] = await Promise.all([
+  const [open, snap, improving, waiting] = await Promise.all([
     db.incident.count({ where: { status: { notIn: ['RESOLVED', 'CLOSED'] } } }),
     db.dashboardSnapshot.findUnique({ where: { key: 'dashboard' } }),
     db.improvementItem.count({ where: { status: 'OPEN' } }),
+    db.incident.count({ where: { status: { in: ['NEW', 'ASSIGNED', 'IN_PROGRESS', 'PENDING_USER', 'PENDING_VENDOR'] }, assigneeId: null } }),
   ]);
   const fromSnap = ((snap?.data as { navBadges?: Record<string, string> } | null)?.navBadges) ?? {};
-  return { ...fromSnap, incident: String(open), improvement: String(improving) };
+  return { ...fromSnap, incident: String(open), improvement: String(improving), serviceDesk: String(waiting) };
 }
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

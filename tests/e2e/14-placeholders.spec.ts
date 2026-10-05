@@ -2,7 +2,6 @@ import { expect, test } from '@playwright/test';
 import { authFile, expectNoHorizontalOverflow } from './helpers';
 
 const PAGES = [
-  { path: '/service-desk', title: 'Service Desk', group: 'ENGAGE', practice: 'Service Desk', related: 'Incident Management' },
   { path: '/monitoring', title: 'Monitoring & Event', group: 'DELIVER & SUPPORT', practice: 'Monitoring and Event Management', related: 'CMDB / Configuration' },
   { path: '/releases', title: 'Release Management', group: 'DESIGN & TRANSITION', practice: 'Release Management', related: 'Change Enablement' },
 ] as const;

@@ -173,6 +173,7 @@ model User {
   notifications     Notification[]
   assetsHeld        Asset[]              @relation("AssetAssignee")
   improvementsOwned ImprovementItem[]    @relation("ImprovementOwner")
+  assignmentRules   AssignmentRule[]     @relation("RuleAssignee")
   resetTokens       PasswordResetToken[]
   changesRequested  Change[]             @relation("ChangeRequester")
 }
@@ -184,6 +185,7 @@ model AssignmentGroup {
 
   incidents Incident[]
   cisOwned  ConfigurationItem[]
+  rules     AssignmentRule[]
 }
 
 model Service {
@@ -202,6 +204,7 @@ model Service {
   changes      Change[]
   catalogItems CatalogItem[]
   improvements ImprovementItem[]
+  rules        AssignmentRule[]
 }
 
 model ServiceOffering {
@@ -670,4 +673,33 @@ model Notification {
 
   @@unique([userId, dedupeKey])
   @@index([userId, readAt, createdAt])
+}
+
+// กฎมอบหมายอัตโนมัติ: Incident ที่บันทึกผ่าน Service Desk และยังไม่ระบุกลุ่ม/ผู้รับผิดชอบ จะใช้กฎแรกที่ตรงบริการ (กฎที่ไม่ระบุบริการ = ค่าเริ่มต้น)
+model AssignmentRule {
+  id         String          @id @default(cuid())
+  name       String
+  serviceId  String?
+  service    Service?        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  groupId    String
+  group      AssignmentGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  assigneeId String?
+  assignee   User?           @relation("RuleAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+  active     Boolean         @default(true)
+  sortOrder  Int             @default(0)
+  createdAt  DateTime        @default(now())
+
+  @@index([active, sortOrder])
+}
+
+// ข้อความตอบกลับสำเร็จรูป (macro) — แทรกลงในโน้ตของ Incident ได้ ผู้ใช้เลือกว่าให้ผู้แจ้งเห็นหรือไม่ตอนส่ง
+model CannedResponse {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  active    Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([active, sortOrder])
 }

@@ -20,6 +20,8 @@ export interface IncidentInput {
   category?: string | null;
   channel?: string | null;
   ciIds?: string[];
+  /** ผู้แจ้งที่แท้จริง (Service Desk บันทึกแทนผู้ใช้) — ไม่ระบุ = ผู้บันทึกเอง */
+  reporterId?: string | null;
 }
 
 const TONE = { accent: 'accent', ok: 'ok', critical: 'critical', ink: 'ink', muted: 'muted' } as const;
@@ -45,7 +47,7 @@ export async function createIncident(input: IncidentInput, userId: string | null
       title: input.title, description: input.description || null, impact: input.impact, urgency: input.urgency, priority, status,
       lifecycleStep: lifecycleStep(status), serviceId: input.serviceId || null, groupId: input.groupId || null,
       assigneeId: input.assigneeId || null, category: input.category || null, channel: input.channel || 'Portal / Service Desk',
-      reporterId: userId,
+      reporterId: input.reporterId ?? userId,
       cis: { create: (input.ciIds ?? []).map((ciId) => ({ ciId, role: 'ได้รับผลกระทบ' })) },
       timers: { create: timers },
       notes: {

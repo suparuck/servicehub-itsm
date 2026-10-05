@@ -12,17 +12,6 @@ export interface PlaceholderInfo {
 
 export const PLACEHOLDERS: PlaceholderInfo[] = [
   {
-    href: '/service-desk',
-    practice: 'Service Desk',
-    summary: 'จุดติดต่อเดียวของผู้ใช้กับทีม IT: รับเรื่องจากทุกช่องทางแล้วส่งต่อให้ถูกทีม',
-    planned: ['คิวรวมของ Incident และ Service Request จากทุกช่องทาง', 'บันทึกเรื่องที่รับทางโทรศัพท์/อีเมลแทนผู้ใช้', 'กฎมอบหมายอัตโนมัติตามบริการและกลุ่มผู้รับผิดชอบ', 'ข้อความตอบกลับสำเร็จรูป (macros)'],
-    related: [
-      { label: 'Incident Management', href: '/incidents', note: 'คิวและรายละเอียด Incident (ใช้งานได้แล้ว)' },
-      { label: 'Service Request', href: '/requests', note: 'คิวคำขอบริการและการอนุมัติ (ใช้งานได้แล้ว)' },
-      { label: 'พอร์ทัลบริการตนเอง', href: '/portal', note: 'ช่องทางแจ้งปัญหา/ขอบริการของผู้ใช้ (ใช้งานได้แล้ว)' },
-    ],
-  },
-  {
     href: '/monitoring',
     practice: 'Monitoring and Event Management',
     summary: 'รับเหตุการณ์จากระบบเฝ้าระวัง คัดกรอง และเปลี่ยนเป็น Incident เมื่อมีผลกระทบต่อบริการ',

@@ -1,13 +1,16 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Countdown } from '@/components/Countdown';
+import { MacroPicker } from '@/components/MacroPicker';
 import { Card, PriorityChip, StatusBadge, cx } from '@/components/ui';
 import { th } from '@/i18n/th';
 import { db } from '@/lib/db';
 import { thDateShort, thDateTime, thTime } from '@/lib/datetime';
 import { formatDocNo } from '@/lib/docno';
 import { allowedTransitions, type IncidentStatus } from '@/lib/incident';
+import { getCurrentUser } from '@/lib/currentUser';
 import { getIncidentByDocNo } from '@/lib/incidentQueries';
+import { activeMacros } from '@/lib/serviceDeskService';
 import { formatTargetMinutes, timerView } from '@/lib/sla';
 import { addNoteAction, changeStatusAction, createProblemAction, escalateAction } from '../actions';
 
@@ -30,6 +33,8 @@ export default async function IncidentDetail({
   const sp = await searchParams;
   const inc = await getIncidentByDocNo(docParam);
   if (!inc) notFound();
+  // ข้อความสำเร็จรูป: แทนตัวแปรด้วยชื่อผู้แจ้ง/เลขที่/ผู้ตอบ ตอนแทรก
+  const [me, reporter, macros] = await Promise.all([getCurrentUser(), inc.reporterId ? db.user.findUnique({ where: { id: inc.reporterId }, select: { name: true } }) : null, activeMacros()]);
 
   const t = th.incident;
   const no = formatDocNo('INC', inc.seq);
@@ -181,6 +186,7 @@ export default async function IncidentDetail({
               </div>
 
               <form action={addNoteAction.bind(null, inc.id)} className="flex flex-col gap-2">
+                <MacroPicker macros={macros} targetId="note" vars={{ ชื่อ: reporter?.name ?? null, เลขที่: no, เจ้าหน้าที่: me.name }} />
                 <label htmlFor="note" className="text-[13px] text-muted">{t.notesAdd}</label>
                 <textarea id="note" name="body" required placeholder={t.notesPlaceholder} className={cx(field, 'min-h-[84px] resize-y p-3')} />
                 <div className="flex flex-wrap items-center gap-3">

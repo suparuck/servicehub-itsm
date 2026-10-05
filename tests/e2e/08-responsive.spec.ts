@@ -4,7 +4,7 @@ import { authFile, expectNoHorizontalOverflow } from './helpers';
 // มือถือ 375px: ไม่เลื่อนแนวนอน และปุ่ม/ลิงก์/ช่องกรอกสูงอย่างน้อย 44px (ข้ามลิงก์ breadcrumb ในส่วนหัว)
 test.use({ viewport: { width: 375, height: 812 }, hasTouch: true });
 
-const staffPages = ['/improvement', '/improvement/IMP-0001', '/assets', '/assets/ASSET-LIC-0101', '/catalogue', '/catalogue/ERP', '/', '/incidents', '/incidents/INC-24817', '/incidents/new', '/cmdb', '/cmdb/CI-DB-00217', '/problems', '/problems/PRB-0412', '/changes', '/changes?view=calendar', '/changes/CHG-3381', '/knowledge', '/knowledge/KB-1187', '/sla', '/requests', '/requests/REQ-10291', '/account'];
+const staffPages = ['/service-desk', '/service-desk/new', '/improvement', '/improvement/IMP-0001', '/assets', '/assets/ASSET-LIC-0101', '/catalogue', '/catalogue/ERP', '/', '/incidents', '/incidents/INC-24817', '/incidents/new', '/cmdb', '/cmdb/CI-DB-00217', '/problems', '/problems/PRB-0412', '/changes', '/changes?view=calendar', '/changes/CHG-3381', '/knowledge', '/knowledge/KB-1187', '/sla', '/requests', '/requests/REQ-10291', '/account'];
 const portalPages = ['/portal', '/portal/catalog', '/portal/knowledge', '/portal/my', '/portal/my/REQ-10291', '/portal/incident/new', '/portal/request/new', '/portal/status', '/account'];
 
 async function smallTargets(page: import('@playwright/test').Page) {
