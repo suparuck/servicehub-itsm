@@ -22,6 +22,8 @@ export type MailMessage =
   | { template: 'slaBreached'; name: string; docNo: string; title: string; priority: string; overrun: string; url: string }
   | { template: 'assetExpiring'; name: string; tag: string; assetName: string; kind: 'support' | 'license'; expires: string; days: number; url: string }
   | { template: 'licenseOverUse'; name: string; tag: string; assetName: string; used: number; qty: number; url: string }
+  | { template: 'releaseStatus'; name: string; docNo: string; releaseName: string; event: 'READY' | 'NO_GO' | 'DEPLOYING' | 'DEPLOYED' | 'ROLLED_BACK' | 'CANCELLED'; reason?: string; window?: string; changes: number; url: string }
+  | { template: 'releaseOwner'; name: string; docNo: string; releaseName: string; window?: string; url: string }
   | { template: 'changeApprovalRequest'; name: string; docNo: string; title: string; type: string; board: string; window: string; url: string }
   | { template: 'changeDecision'; name: string; docNo: string; title: string; approved: boolean; comment?: string; url: string }
   | { template: 'requestApprovalNeeded'; name: string; docNo: string; title: string; requester: string; url: string }
@@ -44,6 +46,8 @@ export const TEMPLATE_META: Record<TemplateName, { critical: true } | { critical
   incidentResolved: { critical: false, category: 'myItems' },
   slaNearBreach: { critical: false, category: 'sla' },
   slaBreached: { critical: false, category: 'sla' },
+  releaseStatus: { critical: false, category: 'myItems' },
+  releaseOwner: { critical: false, category: 'assigned' },
   assetExpiring: { critical: false, category: 'assets' },
   licenseOverUse: { critical: false, category: 'assets' },
   changeApprovalRequest: { critical: false, category: 'approvals' },
@@ -252,6 +256,34 @@ function buildDoc(m: MailMessage): Doc {
         paragraphs: ['Incident ต่อไปนี้เกินกำหนดแก้ไขตาม SLA แล้ว'],
         facts: [['เลขที่', m.docNo], ['เรื่อง', m.title], ['ลำดับความสำคัญ', m.priority], ['เกินกำหนด', m.overrun]],
         cta: { label: 'เปิดดู Incident', url: m.url },
+      };
+    case 'releaseStatus': {
+      const T = {
+        READY: ['พร้อมเปิดใช้', 'Release ผ่านเกณฑ์ Go/No-Go แล้ว พร้อมเปิดใช้ตามช่วงเวลาที่กำหนด'],
+        NO_GO: ['ย้อนกลับไปจัดเตรียมต่อ (No-Go)', 'Release ถูกย้อนกลับไปสถานะกำลังจัดเตรียม ยังไม่เปิดใช้งาน'],
+        DEPLOYING: ['เริ่มเปิดใช้งาน', 'เริ่มเปิดใช้งาน Release นี้สู่ production แล้ว'],
+        DEPLOYED: ['เปิดใช้งานสำเร็จ', 'Release นี้เปิดใช้งานสำเร็จแล้ว และ Change ทั้งหมดในแพ็กเกจเสร็จสิ้น'],
+        ROLLED_BACK: ['ถอยกลับแล้ว', 'Release นี้ถูกถอยกลับตามแผนถอยกลับ'],
+        CANCELLED: ['ยกเลิก', 'Release นี้ถูกยกเลิก — Change ในแพ็กเกจถูกปล่อยออกแล้ว และนำไปรวมใน Release อื่นได้'],
+      }[m.event];
+      return {
+        subject: `[Release] ${T[0]}: ${m.docNo} ${m.releaseName}`,
+        heading: `Release ${T[0]}`,
+        greeting: hi(m.name),
+        paragraphs: [T[1]],
+        facts: [['เลขที่', m.docNo], ['Release', m.releaseName], ...(m.window ? ([['ช่วงเปิดใช้', m.window]] as [string, string][]) : []), ['จำนวน Change', String(m.changes)]],
+        quote: m.reason,
+        cta: { label: 'เปิดดู Release', url: m.url },
+      };
+    }
+    case 'releaseOwner':
+      return {
+        subject: `[Release] คุณเป็นเจ้าของ ${m.docNo}: ${m.releaseName}`,
+        heading: 'คุณได้รับมอบเป็นเจ้าของ Release',
+        greeting: hi(m.name),
+        paragraphs: ['คุณได้รับมอบหมายเป็นเจ้าของ Release ต่อไปนี้ โปรดดูแลแผนการเปิดใช้ แผนถอยกลับ และเกณฑ์ Go/No-Go'],
+        facts: [['เลขที่', m.docNo], ['Release', m.releaseName], ...(m.window ? ([['ช่วงเปิดใช้', m.window]] as [string, string][]) : [])],
+        cta: { label: 'เปิดดู Release', url: m.url },
       };
     case 'assetExpiring': {
       const what = m.kind === 'license' ? 'ไลเซนส์' : 'ประกัน/สัญญา MA';

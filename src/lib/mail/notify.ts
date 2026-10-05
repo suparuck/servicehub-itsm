@@ -243,3 +243,34 @@ export async function processAssetAlerts(now = new Date()): Promise<number> {
   for (const r of rows) await checkAssetAlerts(r.id, now);
   return rows.length;
 }
+
+// ── Release ──
+
+const relUrl = (seq: number) => absoluteUrl(`/releases/${formatDocNo('REL', seq)}`);
+const relWindow = (r: { windowStart: Date | null; windowEnd: Date | null }) => (r.windowStart ? `${thDateShort(r.windowStart)} ${thWindow(r.windowStart, r.windowEnd)} น.` : undefined);
+
+export type ReleaseEvent = 'READY' | 'NO_GO' | 'DEPLOYING' | 'DEPLOYED' | 'ROLLED_BACK' | 'CANCELLED';
+
+/**
+ * Release เปลี่ยนสถานะ → แจ้งเจ้าของ Release และผู้ขอ Change ในแพ็กเกจ (ตัดผู้กระทำเอง)
+ * changeIds ส่งมาจากผู้เรียก (ก่อนปล่อย Change ออกกรณียกเลิก) เพื่อให้ผู้ขอของ Change เหล่านั้นยังได้รับแจ้ง
+ */
+export const notifyReleaseStatus = (releaseId: string, event: ReleaseEvent, reason: string | undefined, actorId: string | null, changeIds: string[]) =>
+  safely('releaseStatus', async () => {
+    const r = await db.release.findUnique({ where: { id: releaseId } });
+    if (!r) return;
+    const requesters = changeIds.length ? await db.change.findMany({ where: { id: { in: changeIds } }, select: { requesterId: true } }) : [];
+    const ids = [...new Set([r.ownerId, ...requesters.map((c) => c.requesterId)].filter((x): x is string => !!x))];
+    const docNo = formatDocNo('REL', r.seq);
+    await send(await usersByIds(ids), 'myItems', actorId, (u) => ({
+      template: 'releaseStatus', name: u.name, docNo, releaseName: r.name, event, reason: reason?.trim() ? excerpt(reason, 400) : undefined, window: relWindow(r), changes: changeIds.length, url: relUrl(r.seq),
+    }));
+  });
+
+/** มอบ/เปลี่ยนเจ้าของ Release → แจ้งเจ้าของใหม่ (ถ้าไม่ใช่ผู้กระทำเอง) */
+export const notifyReleaseOwner = (releaseId: string, actorId: string | null) =>
+  safely('releaseOwner', async () => {
+    const r = await db.release.findUnique({ where: { id: releaseId } });
+    if (!r?.ownerId) return;
+    await send(await usersByIds([r.ownerId]), 'assigned', actorId, (u) => ({ template: 'releaseOwner', name: u.name, docNo: formatDocNo('REL', r.seq), releaseName: r.name, window: relWindow(r), url: relUrl(r.seq) }));
+  });

@@ -5,6 +5,7 @@ import type { ChangeStatus } from './change';
 import { db } from './db';
 import { formatDocNo, parseDocNo } from './docno';
 import { DomainError } from './errors';
+import { notifyReleaseOwner, notifyReleaseStatus, type ReleaseEvent } from './mail/notify';
 import { assertCan, type Role } from './permissions';
 import { PACKAGEABLE, canAddChange, canEditPackage, canEditPlan, canReview, validateRelMove, validateRelease, type RelFormInput, type RelStatus } from './release';
 
@@ -79,6 +80,7 @@ export async function createRelease(actor: Actor, input: RelFormInput) {
   await checkRefs(clean);
   const r = await db.release.create({ data: clean });
   await logAudit('RELEASE', r.id, actor.id, `สร้าง Release “${r.name}”`);
+  if (r.ownerId) await notifyReleaseOwner(r.id, actor.id);
   return r;
 }
 
@@ -113,6 +115,7 @@ export async function updateRelease(actor: Actor, seq: number, input: RelFormInp
   if (!notes.length) return;
   await db.release.update({ where: { seq }, data: clean });
   await logAudit('RELEASE', cur.id, actor.id, `แก้ไข: ${notes.join(' · ')}`);
+  if (clean.ownerId && clean.ownerId !== cur.ownerId) await notifyReleaseOwner(cur.id, actor.id);
 }
 
 /** เพิ่ม Change เข้าแพ็กเกจ — updateMany แบบมีเงื่อนไข (releaseId = null) กันสอง Release แย่ง Change เดียวกัน */
@@ -154,6 +157,9 @@ export async function changeReleaseStatus(actor: Actor, seq: number, to: string,
   // ยกเลิก: ปล่อย Change ออกจากแพ็กเกจ ให้ไปรวมใน Release อื่นได้
   if (next === 'CANCELLED') await db.change.updateMany({ where: { releaseId: cur.id }, data: { releaseId: null } });
   await logAudit('RELEASE', cur.id, actor.id, `เปลี่ยนสถานะ: ${th.release.status[cur.status]} → ${th.release.status[next]}${reason?.trim() ? `\n${reason.trim().slice(0, 300)}` : ''}${next === 'CANCELLED' ? '\n(ปล่อย Change ออกจากแพ็กเกจแล้ว)' : ''}`);
+  // แจ้งเฉพาะการเปลี่ยนที่มีความหมายต่อผู้เกี่ยวข้อง (ไม่แจ้งการเริ่มจัดเตรียมตามปกติ หรือย้อนกลับไปวางแผน)
+  const event: ReleaseEvent | null = next === 'IN_BUILD' && cur.status === 'READY' ? 'NO_GO' : next === 'READY' || next === 'DEPLOYING' || next === 'DEPLOYED' || next === 'ROLLED_BACK' || next === 'CANCELLED' ? next : null;
+  if (event) await notifyReleaseStatus(cur.id, event, reason, actor.id, cur.changes.map((c) => c.id));
 }
 
 export async function saveReview(actor: Actor, seq: number, text: string) {
