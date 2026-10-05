@@ -134,8 +134,8 @@ export async function changeOwnPassword(userId: string, input: { current: string
   await logAudit('USER', userId, userId, 'เปลี่ยนรหัสผ่านด้วยตนเอง');
 }
 
-export const NOTIFY_KEYS = ['notifyAssigned', 'notifyCritical', 'notifyMyItems', 'notifyApprovals', 'notifySla'] as const;
-export type NotifyPrefsInput = { notifyAssigned: boolean; notifyCritical: boolean; notifyMyItems: boolean; notifyApprovals: boolean; notifySla: boolean };
+export const NOTIFY_KEYS = ['notifyAssigned', 'notifyCritical', 'notifyMyItems', 'notifyApprovals', 'notifySla', 'notifyAssets'] as const;
+export type NotifyPrefsInput = { notifyAssigned: boolean; notifyCritical: boolean; notifyMyItems: boolean; notifyApprovals: boolean; notifySla: boolean; notifyAssets: boolean };
 
 /** ผู้ใช้ตั้งค่าการรับอีเมลแจ้งเตือนของตนเอง (อีเมลด้านความปลอดภัยของบัญชีปิดรับไม่ได้) */
 export async function updateNotifyPrefs(userId: string, prefs: Partial<NotifyPrefsInput>) {

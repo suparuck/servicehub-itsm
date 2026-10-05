@@ -4,6 +4,7 @@ import { ASSET_CLASSES, canMoveStatus, isAssetClass, isLicenseClass, licenseStat
 import { logAudit } from './audit';
 import { db } from './db';
 import { DomainError } from './errors';
+import { checkAssetAlerts } from './mail/notify';
 import { assertCan, type Role } from './permissions';
 
 export class AssetError extends DomainError {}
@@ -116,6 +117,7 @@ export async function createAsset(actor: Actor, ciId: string, input: AssetFormIn
     try {
       const a = await db.asset.create({ data: { assetTag, ciId: ci.id, status, ...clean } });
       await logAudit('ASSET', a.id, actor.id, `รับสินทรัพย์เข้าทะเบียน ${assetTag} (${ci.name}) สถานะ ${th.asset.status[status]}`);
+      await checkAssetAlerts(a.id);
       return a;
     } catch (e) {
       if ((e as { code?: string }).code !== 'P2002') throw e;
@@ -149,6 +151,7 @@ export async function updateAsset(actor: Actor, tag: string, input: AssetFormInp
   if (!changes.length) return;
   await db.asset.update({ where: { assetTag: tag }, data: clean });
   await logAudit('ASSET', cur.id, actor.id, `แก้ไขข้อมูลสินทรัพย์\n${changes.join('\n')}`);
+  await checkAssetAlerts(cur.id);
 }
 
 /**

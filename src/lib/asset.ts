@@ -47,6 +47,17 @@ export function supportState(until: Date | null | undefined, now = new Date()): 
 
 export const daysLeft = (until: Date, now = new Date()) => bkkDay(until) - bkkDay(now);
 
+/**
+ * ขั้นของการแจ้งเตือนวันหมดอายุ: เตือนเมื่อเหลือ ≤ 90 / ≤ 30 / ≤ 7 วัน และเมื่อหมดแล้ว (คืน 0 ตอนหมดอายุ/เกินกำหนด)
+ * คืน null เมื่อยังเหลือมากกว่า 90 วัน — แต่ละขั้นส่งครั้งเดียวต่อวันหมดอายุ (กุญแจกันซ้ำรวมวันหมดอายุไว้ ต่ออายุแล้วเริ่มนับใหม่)
+ */
+export const ALERT_STEPS = [90, 30, 7] as const;
+export function alertStep(days: number): 90 | 30 | 7 | 0 | null {
+  if (days < 0) return 0;
+  for (const s of [7, 30, 90] as const) if (days <= s) return s;
+  return null;
+}
+
 // ── ไลเซนส์ ──
 export type LicenseState = 'NA' | 'OK' | 'NEAR' | 'OVER';
 export const NEAR_PCT = 90;

@@ -2,7 +2,7 @@
 // ทุกเทมเพลตสร้างจากโครงสร้างเดียว (Doc) แล้ว render เป็น text และ HTML เพื่อให้สองแบบตรงกัน
 // ข้อมูลที่ผู้ใช้พิมพ์ (เช่น หัวข้อ Incident) ถูก escape ทุกครั้งในจุดเดียว (esc) กัน HTML injection ในอีเมลของเจ้าหน้าที่
 
-export type NotifyCategory = 'assigned' | 'critical' | 'myItems' | 'approvals' | 'sla';
+export type NotifyCategory = 'assigned' | 'critical' | 'myItems' | 'approvals' | 'sla' | 'assets';
 
 export type MailMessage =
   // ── ความปลอดภัยของบัญชี (critical = ปิดรับไม่ได้) ──
@@ -20,6 +20,8 @@ export type MailMessage =
   | { template: 'incidentResolved'; name: string; docNo: string; title: string; note: string; url: string }
   | { template: 'slaNearBreach'; name: string; docNo: string; title: string; priority: string; left: string; url: string }
   | { template: 'slaBreached'; name: string; docNo: string; title: string; priority: string; overrun: string; url: string }
+  | { template: 'assetExpiring'; name: string; tag: string; assetName: string; kind: 'support' | 'license'; expires: string; days: number; url: string }
+  | { template: 'licenseOverUse'; name: string; tag: string; assetName: string; used: number; qty: number; url: string }
   | { template: 'changeApprovalRequest'; name: string; docNo: string; title: string; type: string; board: string; window: string; url: string }
   | { template: 'changeDecision'; name: string; docNo: string; title: string; approved: boolean; comment?: string; url: string }
   | { template: 'requestApprovalNeeded'; name: string; docNo: string; title: string; requester: string; url: string }
@@ -42,6 +44,8 @@ export const TEMPLATE_META: Record<TemplateName, { critical: true } | { critical
   incidentResolved: { critical: false, category: 'myItems' },
   slaNearBreach: { critical: false, category: 'sla' },
   slaBreached: { critical: false, category: 'sla' },
+  assetExpiring: { critical: false, category: 'assets' },
+  licenseOverUse: { critical: false, category: 'assets' },
   changeApprovalRequest: { critical: false, category: 'approvals' },
   changeDecision: { critical: false, category: 'myItems' },
   requestApprovalNeeded: { critical: false, category: 'approvals' },
@@ -248,6 +252,27 @@ function buildDoc(m: MailMessage): Doc {
         paragraphs: ['Incident ต่อไปนี้เกินกำหนดแก้ไขตาม SLA แล้ว'],
         facts: [['เลขที่', m.docNo], ['เรื่อง', m.title], ['ลำดับความสำคัญ', m.priority], ['เกินกำหนด', m.overrun]],
         cta: { label: 'เปิดดู Incident', url: m.url },
+      };
+    case 'assetExpiring': {
+      const what = m.kind === 'license' ? 'ไลเซนส์' : 'ประกัน/สัญญา MA';
+      const state = m.days < 0 ? `${what}หมดอายุแล้ว` : m.days === 0 ? `${what}หมดอายุวันนี้` : `${what}ใกล้หมด (อีก ${m.days} วัน)`;
+      return {
+        subject: `[ITAM] ${state}: ${m.assetName} (${m.tag})`,
+        heading: state,
+        greeting: hi(m.name),
+        paragraphs: [m.days < 0 ? `${what}ของสินทรัพย์ต่อไปนี้หมดอายุแล้ว โปรดต่อสัญญา/ไลเซนส์หรือวางแผนทดแทน` : `${what}ของสินทรัพย์ต่อไปนี้ใกล้หมดอายุ โปรดดำเนินการต่ออายุหรือวางแผนทดแทนก่อนครบกำหนด`],
+        facts: [['แท็ก', m.tag], ['สินทรัพย์', m.assetName], [m.kind === 'license' ? 'วันหมดอายุไลเซนส์' : 'สิ้นสุดประกัน/MA', m.expires], ['เหลือ', m.days < 0 ? `เกินมา ${-m.days} วัน` : `${m.days} วัน`]],
+        cta: { label: 'เปิดดูสินทรัพย์', url: m.url },
+      };
+    }
+    case 'licenseOverUse':
+      return {
+        subject: `[ITAM] ไลเซนส์ใช้เกินสิทธิ์: ${m.assetName} (${m.used}/${m.qty})`,
+        heading: 'ไลเซนส์ใช้เกินสิทธิ์ที่ซื้อ',
+        greeting: hi(m.name),
+        paragraphs: [`จำนวนสิทธิ์ที่ใช้เกินจำนวนที่ซื้อไว้ (${m.used} จาก ${m.qty}) เสี่ยงต่อการไม่เป็นไปตามเงื่อนไขไลเซนส์ โปรดซื้อเพิ่มหรือเรียกคืนสิทธิ์ที่ไม่ได้ใช้`],
+        facts: [['แท็ก', m.tag], ['สินทรัพย์', m.assetName], ['สิทธิ์ที่ซื้อ', String(m.qty)], ['สิทธิ์ที่ใช้', String(m.used)]],
+        cta: { label: 'เปิดดูสินทรัพย์', url: m.url },
       };
     case 'changeApprovalRequest':
       return {

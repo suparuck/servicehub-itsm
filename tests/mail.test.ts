@@ -62,7 +62,7 @@ describe('retry backoff', () => {
 });
 
 const user = (over: Partial<Recipient> & { id: string }): Recipient => ({
-  email: `${over.id}@x.test`, name: over.id, active: true, notifyAssigned: true, notifyCritical: true, notifyMyItems: true, notifyApprovals: true, notifySla: true, ...over,
+  email: `${over.id}@x.test`, name: over.id, active: true, notifyAssigned: true, notifyCritical: true, notifyMyItems: true, notifyApprovals: true, notifySla: true, notifyAssets: true, ...over,
 });
 
 describe('pickRecipients', () => {
@@ -112,6 +112,8 @@ const samples: MailMessage[] = [
   { template: 'incidentResolved', name: 'สมชาย', docNo: 'INC-1', title: 'เรื่อง', note: 'แก้แล้ว', url: URL_ },
   { template: 'slaNearBreach', name: 'สมชาย', docNo: 'INC-1', title: 'เรื่อง', priority: 'P1 วิกฤต', left: '0:30 ชม.', url: URL_ },
   { template: 'slaBreached', name: 'สมชาย', docNo: 'INC-1', title: 'เรื่อง', priority: 'P1 วิกฤต', overrun: '12 นาที', url: URL_ },
+  { template: 'assetExpiring', name: 'สมชาย', tag: 'ASSET-NET-0121', assetName: 'SW-DC1-CORE01', kind: 'support', expires: '05/12/69', days: 60, url: URL_ },
+  { template: 'licenseOverUse', name: 'สมชาย', tag: 'ASSET-LIC-0101', assetName: 'Adobe Creative Cloud', used: 52, qty: 50, url: URL_ },
   { template: 'changeApprovalRequest', name: 'สมชาย', docNo: 'CHG-1', title: 'เรื่อง', type: 'Normal Change', board: 'CAB', window: '5 ต.ค. 01:00', url: URL_ },
   { template: 'changeDecision', name: 'สมชาย', docNo: 'CHG-1', title: 'เรื่อง', approved: false, comment: 'ชนช่วงปิดงวด', url: URL_ },
   { template: 'requestApprovalNeeded', name: 'สมชาย', docNo: 'REQ-1', title: 'เรื่อง', requester: 'มณีรัตน์', url: URL_ },
@@ -154,6 +156,8 @@ describe('templates', () => {
   });
   it('หมวดการแจ้งเตือนผูกกับเทมเพลตถูกต้อง', () => {
     expect(TEMPLATE_META.slaBreached).toEqual({ critical: false, category: 'sla' });
+    expect(TEMPLATE_META.assetExpiring).toEqual({ critical: false, category: 'assets' });
+    expect(TEMPLATE_META.licenseOverUse).toEqual({ critical: false, category: 'assets' });
     expect(TEMPLATE_META.passwordReset).toEqual({ critical: true });
     expect(TEMPLATE_META.incidentUserReplied).toEqual({ critical: false, category: 'assigned' });
   });

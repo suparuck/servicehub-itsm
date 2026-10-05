@@ -1,6 +1,6 @@
 import { purgeOldEvents } from '../monitoringService';
 import { purgeOldNotifications } from '../notificationService';
-import { processSlaAlerts } from './notify';
+import { processAssetAlerts, processSlaAlerts } from './notify';
 
 /** ตรวจ SLA ใกล้ผิด/ผิดกำหนดทุก 1 นาที (ส่งอย่างละครั้งต่อ timer — ดู processSlaAlerts) */
 const g = globalThis as unknown as { slaWatcher?: ReturnType<typeof setInterval> };
@@ -18,6 +18,7 @@ export function startSlaWatcher(intervalMs = 60_000) {
         // ทุก ~1 ชม. (และตอนเริ่ม)
         await purgeOldNotifications();
         await purgeOldEvents();
+        await processAssetAlerts();
       }
     } catch (err) {
       console.error('[sla] watcher error', err instanceof Error ? err.message : err);

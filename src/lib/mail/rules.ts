@@ -21,6 +21,7 @@ export interface NotifyPrefs {
   notifyMyItems: boolean;
   notifyApprovals: boolean;
   notifySla: boolean;
+  notifyAssets: boolean;
 }
 
 export const PREF_KEY: Record<NotifyCategory, keyof NotifyPrefs> = {
@@ -29,6 +30,7 @@ export const PREF_KEY: Record<NotifyCategory, keyof NotifyPrefs> = {
   myItems: 'notifyMyItems',
   approvals: 'notifyApprovals',
   sla: 'notifySla',
+  assets: 'notifyAssets',
 };
 
 export interface Recipient extends NotifyPrefs {

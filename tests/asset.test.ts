@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ASSET_CLASSES, canMoveStatus, csvCell, daysLeft, isAssetClass, licenseState, nextAssetTag, nextStatuses, supportState, toCsv, validateAsset, type AssetFormInput } from '@/lib/asset';
+import { ALERT_STEPS, ASSET_CLASSES, alertStep, canMoveStatus, csvCell, daysLeft, isAssetClass, licenseState, nextAssetTag, nextStatuses, supportState, toCsv, validateAsset, type AssetFormInput } from '@/lib/asset';
 import { can } from '@/lib/permissions';
 
 const blank: AssetFormInput = { vendor: '', serialNo: '', location: '', costBaht: '', purchasedAt: '', supportUntil: '', licenseQty: '', licenseUsed: '' };
@@ -41,6 +41,27 @@ describe('supportState / daysLeft', () => {
     expect(supportState(at('2027-01-02T00:00:00Z'), NOW)).toBe('EXPIRING'); // 90 วัน
     expect(supportState(at('2027-01-04T00:00:00Z'), NOW)).toBe('ACTIVE'); // 92 วัน
     expect(daysLeft(at('2026-10-14T05:00:00Z'), NOW)).toBe(10);
+  });
+});
+
+describe('alertStep (ขั้นแจ้งเตือนวันหมดอายุ)', () => {
+  it('เหลือ > 90 วันยังไม่แจ้ง; แจ้งที่ขั้น 90/30/7 และเมื่อหมดแล้ว', () => {
+    expect(ALERT_STEPS).toEqual([90, 30, 7]);
+    expect(alertStep(365)).toBeNull();
+    expect(alertStep(91)).toBeNull();
+    expect(alertStep(90)).toBe(90);
+    expect(alertStep(60)).toBe(90);
+    expect(alertStep(31)).toBe(90);
+    expect(alertStep(30)).toBe(30);
+    expect(alertStep(8)).toBe(30);
+    expect(alertStep(7)).toBe(7);
+    expect(alertStep(0)).toBe(7); // วันหมดอายุวันนี้ยังใช้ได้ถึงสิ้นวัน — ขั้นเตือนสุดท้าย
+    expect(alertStep(-1)).toBe(0);
+    expect(alertStep(-400)).toBe(0);
+  });
+  it('สินทรัพย์ที่เพิ่งขึ้นทะเบียนใกล้หมดแล้ว ได้เฉพาะขั้นปัจจุบัน (ไม่ย้อนแจ้งขั้นที่ผ่านมาแล้ว)', () => {
+    // เหลือ 5 วัน → ขั้น 7 เท่านั้น ไม่ใช่ 90 และ 30
+    expect(alertStep(5)).toBe(7);
   });
 });
 

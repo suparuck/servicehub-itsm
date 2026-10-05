@@ -159,6 +159,7 @@ model User {
   notifyMyItems      Boolean          @default(true) // ความคืบหน้าของเรื่องที่ฉันแจ้งหรือขอ
   notifyApprovals    Boolean          @default(true) // มีคำขออนุมัติ Change / คำขอบริการ
   notifySla          Boolean          @default(true) // SLA ใกล้ผิด / ผิด
+  notifyAssets       Boolean          @default(true) // ประกัน/ไลเซนส์ใกล้หมด · ไลเซนส์ใช้เกินสิทธิ์
   createdAt          DateTime         @default(now())
 
   assignedIncidents Incident[]           @relation("IncidentAssignee")

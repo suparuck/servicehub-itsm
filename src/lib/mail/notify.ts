@@ -8,6 +8,8 @@ import { excerpt, pickRecipients, type Recipient } from './rules';
 import { summarize, TEMPLATE_META, type MailMessage, type NotifyCategory } from './templates';
 import { formatRemaining, thDateShort, thWindow } from '../datetime';
 import { timerView } from '../sla';
+import { alertStep, daysLeft, licenseState } from '../asset';
+import { bangkokYmd } from '../change';
 
 // ทุกฟังก์ชันที่นี่ "ไม่โยน error" — การแจ้งเตือนล้มเหลวต้องไม่ทำให้งานหลัก (บันทึก Incident, อนุมัติ ฯลฯ) ล้มไปด้วย
 async function safely(label: string, fn: () => Promise<unknown>) {
@@ -18,7 +20,7 @@ async function safely(label: string, fn: () => Promise<unknown>) {
   }
 }
 
-const SELECT = { id: true, email: true, name: true, active: true, notifyAssigned: true, notifyCritical: true, notifyMyItems: true, notifyApprovals: true, notifySla: true } satisfies Prisma.UserSelect;
+const SELECT = { id: true, email: true, name: true, active: true, notifyAssigned: true, notifyCritical: true, notifyMyItems: true, notifyApprovals: true, notifySla: true, notifyAssets: true } satisfies Prisma.UserSelect;
 
 const usersByIds = (ids: (string | null | undefined)[]): Promise<Recipient[]> => {
   const list = ids.filter((x): x is string => !!x);
@@ -199,4 +201,45 @@ export async function processSlaAlerts(now = new Date()): Promise<{ near: number
     });
   }
   return out;
+}
+
+// ── สินทรัพย์: ประกัน/ไลเซนส์ใกล้หมด และไลเซนส์ใช้เกินสิทธิ์ ──
+
+/**
+ * ตรวจสินทรัพย์หนึ่งรายการแล้วแจ้งเตือนผู้เกี่ยวข้อง: เจ้าของ CI + ผู้จัดการ CMDB + ผู้ดูแล (ตามค่าตั้งหมวด "ประกัน/ไลเซนส์")
+ * ส่งครั้งเดียวต่อขั้น (เหลือ ≤ 90 / ≤ 30 / ≤ 7 วัน / หมดแล้ว) ต่อวันหมดอายุ — กุญแจกันซ้ำรวมวันหมดอายุไว้ ต่ออายุแล้วเริ่มนับใหม่
+ * ไลเซนส์ใช้เกินสิทธิ์แจ้งครั้งเดียวต่อจำนวนสิทธิ์ที่ซื้อ · ไม่โยน error (ห้ามทำให้การแก้ไขสินทรัพย์ล้ม)
+ */
+export const checkAssetAlerts = (assetId: string, now = new Date()) =>
+  safely('assetAlerts', async () => {
+    const a = await db.asset.findUnique({ where: { id: assetId }, include: { ci: { select: { name: true, ciClass: true, ownerUserId: true } } } });
+    if (!a || a.status === 'RETIRED') return;
+    const owner = a.ci.ownerUserId;
+    const users = await db.user.findMany({ where: { active: true, OR: [...(owner ? [{ id: owner }] : []), { role: { in: ['CONFIG_MANAGER', 'ADMIN'] as Role[] } }] }, select: SELECT });
+    const url = absoluteUrl(`/assets/${a.assetTag}`);
+    const license = a.ci.ciClass === 'SOFTWARE_LICENSE';
+    if (a.supportUntil) {
+      const days = daysLeft(a.supportUntil, now);
+      const step = alertStep(days);
+      if (step !== null) {
+        const key = `asset:${a.id}:${bangkokYmd(a.supportUntil)}:${step}`;
+        await send(users, 'assets', null, (u) => ({ template: 'assetExpiring', name: u.name, tag: a.assetTag, assetName: a.ci.name, kind: license ? 'license' : 'support', expires: thDateShort(a.supportUntil as Date), days, url }), (u) => `${key}:${u.id}`);
+      }
+    }
+    if (license && a.licenseQty != null && a.licenseUsed != null && licenseState(a.licenseQty, a.licenseUsed) === 'OVER') {
+      const key = `asset:${a.id}:over:${a.licenseQty}`;
+      const [used, qty] = [a.licenseUsed, a.licenseQty];
+      await send(users, 'assets', null, (u) => ({ template: 'licenseOverUse', name: u.name, tag: a.assetTag, assetName: a.ci.name, used, qty, url }), (u) => `${key}:${u.id}`);
+    }
+  });
+
+/** ตรวจสินทรัพย์ทั้งหมดที่เข้าเกณฑ์ (ใกล้หมด/หมดแล้ว/ไลเซนส์) — เรียกเป็นรอบจาก worker; คืนจำนวนที่ตรวจ */
+export async function processAssetAlerts(now = new Date()): Promise<number> {
+  const horizon = new Date(now.getTime() + 92 * 86_400_000);
+  const rows = await db.asset.findMany({
+    where: { status: { not: 'RETIRED' }, OR: [{ supportUntil: { lte: horizon } }, { licenseQty: { not: null }, licenseUsed: { not: null } }] },
+    select: { id: true },
+  });
+  for (const r of rows) await checkAssetAlerts(r.id, now);
+  return rows.length;
 }
