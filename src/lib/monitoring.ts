@@ -120,6 +120,23 @@ export function ciHealth(events: CiEventLike[]): Map<string, CiHealth> {
   return out;
 }
 
+export type SvcHealth = 'OK' | 'DEGRADED' | 'DOWN';
+
+/**
+ * สุขภาพของบริการจากเหตุการณ์ที่ยังไม่ปิด (ผูกด้วยรหัสบริการ service ในเหตุการณ์):
+ * ผิดปกติ (CRITICAL) → ขัดข้อง · เตือน (WARNING) → ช้า/บางส่วน · ข้อมูล (INFO) และที่ปิดแล้วไม่มีผล
+ * (รับทราบแล้วยังนับ — ปัญหายังอยู่แค่มีคนรับเรื่อง) · ไม่มีเหตุการณ์ค้างเลย → ปกติ
+ */
+export function serviceHealthFrom(events: { severity: Severity; status: EvStatus }[]): SvcHealth {
+  let h: SvcHealth = 'OK';
+  for (const e of events) {
+    if (e.status === 'RESOLVED') continue;
+    if (e.severity === 'CRITICAL') return 'DOWN';
+    if (e.severity === 'WARNING') h = 'DEGRADED';
+  }
+  return h;
+}
+
 // ── จำกัดอัตรา (ต่อแหล่ง) ──
 export const RATE_LIMIT = 300; // เหตุการณ์ต่อนาทีต่อแหล่ง
 export const RATE_WINDOW_MS = 60_000;

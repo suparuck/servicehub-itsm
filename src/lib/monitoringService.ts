@@ -7,12 +7,32 @@ import { createIncident } from './incidentService';
 import { generateToken, hashToken } from './mail/tokens';
 import { assertCan, type Role } from './permissions';
 import { pickRule } from './serviceDesk';
-import { INCIDENT_LEVELS, TOKEN_PREFIX, ciHealth, clean, decide, dedupKey, incidentTitle, severityRank, shouldAutoIncident, type IncomingEvent } from './monitoring';
+import { INCIDENT_LEVELS, TOKEN_PREFIX, ciHealth, clean, decide, serviceHealthFrom, dedupKey, incidentTitle, severityRank, shouldAutoIncident, type IncomingEvent } from './monitoring';
 
 export class MonitoringError extends DomainError {}
 type Actor = { id: string; role: Role };
 
 const KEEP_RESOLVED_DAYS = 30;
+
+// ── สุขภาพบริการจากเหตุการณ์ ───────────────────────────────
+
+const HEALTH_TH = { OK: 'ปกติ', DEGRADED: 'ช้า/บางส่วน', DOWN: 'ขัดข้อง' } as const;
+
+/**
+ * คำนวณสุขภาพของบริการจากเหตุการณ์ที่ยังไม่ปิดแล้วบันทึกลง Service.health (ผู้อ่านเดิม — แดชบอร์ด พอร์ทัล ทะเบียนบริการ — เห็นผลทันที)
+ * บริการที่ไม่เคยมีเหตุการณ์คงค่าเดิมไว้ · เปลี่ยนแล้วบันทึกในประวัติของบริการ · ไม่พบรหัสบริการ = ข้าม (เหตุการณ์ยังเก็บไว้)
+ */
+export async function syncServiceHealth(serviceCode: string | null | undefined, cause?: string) {
+  if (!serviceCode) return;
+  const service = await db.service.findFirst({ where: { code: { equals: serviceCode, mode: 'insensitive' } } });
+  if (!service) return;
+  const open = await db.monitoringEvent.findMany({ where: { serviceCode: { equals: service.code, mode: 'insensitive' }, status: { not: 'RESOLVED' } }, select: { severity: true, status: true } });
+  const next = serviceHealthFrom(open);
+  if (next === service.health) return;
+  // updateMany มีเงื่อนไขค่าเดิม: สองคำขอพร้อมกันที่คำนวณได้ผลเดียวกันบันทึกประวัติครั้งเดียว
+  const won = await db.service.updateMany({ where: { id: service.id, health: service.health }, data: { health: next } });
+  if (won.count === 1) await logAudit('SERVICE', service.id, null, `สถานะบริการเปลี่ยน: ${HEALTH_TH[service.health]} → ${HEALTH_TH[next]} (จากเหตุการณ์เฝ้าระวัง${cause ? `: ${cause}` : ''})`);
+}
 
 // ── แหล่งเหตุการณ์ ─────────────────────────────────────────
 
@@ -120,6 +140,8 @@ export async function ingestEvent(source: { id: string; autoIncident: boolean },
   });
 
   const ev = 'event' in outcome ? outcome.event : undefined;
+  // เหตุการณ์ปกติ (ปิด) ก็ต้องคำนวณสุขภาพใหม่ — ปิดเหตุการณ์สุดท้ายของบริการแล้วกลับเป็นปกติ
+  if (e.service) await syncServiceHealth(e.service, e.check).catch((err) => console.error('[monitoring] health sync failed', err instanceof Error ? err.message : err));
   if (ev && shouldAutoIncident(source.autoIncident, ev.severity, ev.incidentId)) {
     try {
       const doc = await openIncidentFor(ev.id, null, 'อัตโนมัติ');
@@ -167,6 +189,7 @@ export interface EventFilters {
   status?: string; // active (ค่าเริ่มต้น: เปิด+รับทราบ) | all | OPEN | ACKNOWLEDGED | RESOLVED
   severity?: string;
   source?: string;
+  service?: string; // รหัสบริการ — แสดงเฉพาะเหตุการณ์ที่ผูกกับบริการนี้
 }
 
 const SEVERITIES: EventSeverity[] = ['INFO', 'WARNING', 'CRITICAL'];
@@ -179,6 +202,7 @@ export async function listEvents(f: EventFilters = {}) {
   else if (STATUSES.includes(status as EventStatus)) and.push({ status: status as EventStatus });
   if (f.severity && SEVERITIES.includes(f.severity as EventSeverity)) and.push({ severity: f.severity as EventSeverity });
   if (f.source) and.push({ sourceId: f.source });
+  if (f.service) and.push({ serviceCode: { equals: f.service, mode: 'insensitive' } });
   const q = f.q?.trim();
   if (q) and.push({ OR: [{ check: { contains: q, mode: 'insensitive' } }, { title: { contains: q, mode: 'insensitive' } }, { ciRef: { contains: q, mode: 'insensitive' } }, { message: { contains: q, mode: 'insensitive' } }] });
   const rows = await db.monitoringEvent.findMany({
@@ -190,6 +214,10 @@ export async function listEvents(f: EventFilters = {}) {
   // ผิดปกติก่อน แล้วเรียงตามเวลาล่าสุด
   return rows.sort((a, b) => severityRank(b.severity) - severityRank(a.severity) || b.lastSeenAt.getTime() - a.lastSeenAt.getTime());
 }
+
+/** เหตุการณ์ที่ยังไม่ปิดของบริการหนึ่ง (ที่กำลังกำหนดสุขภาพของบริการ) */
+export const openEventsForService = (code: string) =>
+  db.monitoringEvent.findMany({ where: { serviceCode: { equals: code, mode: 'insensitive' }, status: { not: 'RESOLVED' } }, orderBy: { lastSeenAt: 'desc' }, take: 20, select: { id: true, check: true, severity: true, status: true, ciRef: true, occurrences: true, lastSeenAt: true } });
 
 export async function eventsOverview(now = new Date()) {
   const [active, last24h, sources] = await Promise.all([
@@ -240,6 +268,7 @@ export async function resolveEvent(actor: Actor, id: string) {
   if (e.status === 'RESOLVED') throw new MonitoringError('เหตุการณ์นี้ปิดแล้ว');
   await db.monitoringEvent.update({ where: { id }, data: { status: 'RESOLVED', resolvedAt: new Date(), resolvedBy: actor.id } });
   await logAudit('MONITORING', e.id, actor.id, `ปิดเหตุการณ์ด้วยมือ “${e.title}”`);
+  await syncServiceHealth(e.serviceCode, e.check);
 }
 
 export async function createIncidentFromEvent(actor: Actor, id: string): Promise<string> {

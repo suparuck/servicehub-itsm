@@ -7,6 +7,7 @@ import { th } from '@/i18n/th';
 import { getAudit } from '@/lib/audit';
 import { formatMinutes } from '@/lib/catalogue';
 import { getServiceDetail, listSlas } from '@/lib/catalogueService';
+import { openEventsForService } from '@/lib/monitoringService';
 import { getCurrentUser } from '@/lib/currentUser';
 import { thDay, thMonthShort, thWindow } from '@/lib/datetime';
 import { formatDocNo } from '@/lib/docno';
@@ -25,7 +26,7 @@ export default async function ServiceDetail({ params, searchParams }: { params: 
   const detail = await getServiceDetail(decodeURIComponent(raw));
   if (!detail) notFound();
   const { service: s, incidents, changes } = detail;
-  const [slas, activity] = await Promise.all([listSlas(), getAudit('SERVICE', s.id)]);
+  const [slas, activity, events] = await Promise.all([listSlas(), getAudit('SERVICE', s.id), openEventsForService(s.code)]);
   const manage = can(user.role as Role, 'catalogue.manage');
   const t = th.catalogue;
   const f = t.form;
@@ -71,6 +72,23 @@ export default async function ServiceDetail({ params, searchParams }: { params: 
               {manage && <button type="submit" className="h-11 self-start rounded-control bg-accent px-5 text-sm font-semibold text-white hover:bg-accent-hover">{f.save}</button>}
             </fieldset>
           </form>
+        </Card>
+
+        <Card className="gap-2 p-5">
+          <h2 className="m-0 text-[17px] font-semibold">{t.eventsTitle}</h2>
+          {events.length === 0 ? <p className="m-0 text-sm text-muted">{t.eventsNone}</p> : (
+            <ul className="m-0 flex list-none flex-col p-0" data-testid="health-events">
+              {events.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-divider py-1.5 text-sm last:border-b-0">
+                  <StatusBadge tone={e.severity === 'CRITICAL' ? 'critical' : e.severity === 'WARNING' ? 'warn' : 'neutral'} className="text-xs">{th.monitoring.severity[e.severity]}</StatusBadge>
+                  <span className="font-medium">{e.check}</span>
+                  {e.ciRef && <span className="text-xs text-muted">{e.ciRef}</span>}
+                  <span className="text-xs text-muted">{th.monitoring.times(e.occurrences)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href={`/monitoring?service=${encodeURIComponent(s.code)}`} className="inline-flex min-h-11 items-center self-start text-sm">{t.eventsAll}</Link>
         </Card>
 
         <Card className="gap-2 p-5">

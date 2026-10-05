@@ -15,7 +15,7 @@ const control = 'box-border h-11 rounded-control border border-input bg-surface 
 const btn = 'h-11 rounded-control border border-input bg-surface px-3 text-sm';
 const SEV_TONE: Record<Severity, Tone> = { INFO: 'neutral', WARNING: 'warn', CRITICAL: 'critical' };
 const STATUS_TONE: Record<EvStatus, Tone> = { OPEN: 'accent', ACKNOWLEDGED: 'neutral', RESOLVED: 'ok' };
-type SP = { q?: string; status?: string; severity?: string; source?: string; error?: string };
+type SP = { q?: string; status?: string; severity?: string; source?: string; service?: string; error?: string };
 
 export default async function MonitoringPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
@@ -134,6 +134,8 @@ export default async function MonitoringPage({ searchParams }: { searchParams: P
               {sources.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             </select>
           </label>
+          {sp.service && <input type="hidden" name="service" value={sp.service} />}
+          {sp.service && <span className="inline-flex h-11 items-center rounded-control bg-accent-tint px-3 text-sm text-accent-hover">{t.serviceFilter(sp.service.toUpperCase())}</span>}
           <button type="submit" className="h-11 rounded-control bg-ink px-5 text-sm font-semibold text-white">{t.apply}</button>
           <Link href="/monitoring" className="inline-flex h-11 items-center px-2 text-sm">{th.common.reset}</Link>
         </form>

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allowRate, bearer, ciHealth, clean, decide, dedupKey, incidentTitle, looksLikeSourceToken, parseEvent, shouldAutoIncident, type IncomingEvent, type OpenEventLike } from '@/lib/monitoring';
+import { allowRate, bearer, ciHealth, serviceHealthFrom, clean, decide, dedupKey, incidentTitle, looksLikeSourceToken, parseEvent, shouldAutoIncident, type IncomingEvent, type OpenEventLike } from '@/lib/monitoring';
 import { can } from '@/lib/permissions';
 import { generateToken } from '@/lib/mail/tokens';
 
@@ -94,6 +94,24 @@ describe('ciHealth', () => {
       { ciId: 'd', severity: 'WARNING', status: 'OPEN' },
     ]);
     expect(Object.fromEntries(m)).toEqual({ a: 'CRITICAL', d: 'WARNING' });
+  });
+});
+
+describe('serviceHealthFrom (สุขภาพบริการจากเหตุการณ์)', () => {
+  const e = (severity: 'INFO' | 'WARNING' | 'CRITICAL', status: 'OPEN' | 'ACKNOWLEDGED' | 'RESOLVED' = 'OPEN') => ({ severity, status });
+  it('ไม่มีเหตุการณ์ค้าง = ปกติ; INFO และที่ปิดแล้วไม่มีผล', () => {
+    expect(serviceHealthFrom([])).toBe('OK');
+    expect(serviceHealthFrom([e('INFO')])).toBe('OK');
+    expect(serviceHealthFrom([e('CRITICAL', 'RESOLVED'), e('WARNING', 'RESOLVED')])).toBe('OK');
+  });
+  it('เตือน = ช้า/บางส่วน; ผิดปกติ = ขัดข้อง และผิดปกติชนะเตือนไม่ว่าลำดับ', () => {
+    expect(serviceHealthFrom([e('WARNING')])).toBe('DEGRADED');
+    expect(serviceHealthFrom([e('WARNING'), e('CRITICAL')])).toBe('DOWN');
+    expect(serviceHealthFrom([e('CRITICAL'), e('WARNING')])).toBe('DOWN');
+  });
+  it('รับทราบแล้วยังนับ (ปัญหายังอยู่) แต่ปิดแล้วไม่นับ', () => {
+    expect(serviceHealthFrom([e('CRITICAL', 'ACKNOWLEDGED')])).toBe('DOWN');
+    expect(serviceHealthFrom([e('CRITICAL', 'RESOLVED'), e('WARNING', 'ACKNOWLEDGED')])).toBe('DEGRADED');
   });
 });
 
