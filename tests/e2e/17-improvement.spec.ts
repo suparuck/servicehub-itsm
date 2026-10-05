@@ -3,7 +3,11 @@ import { alert, asRole, authFile, waitHydrated } from './helpers';
 
 const tile = (page: Page, label: string) => page.getByTestId('tiles').getByRole('link', { name: new RegExp(`^${label}`) });
 const rowOf = (page: Page, text: string) => page.getByRole('row').filter({ hasText: text });
-const save = (page: Page, name: string) => Promise.all([page.waitForResponse((r) => r.request().method() === 'POST'), page.getByRole('button', { name }).click()]);
+/** กดบันทึกแล้วรอทั้งการตอบกลับของ action และการรีเรนเดอร์ — ไม่งั้นช่องที่เลือกต่อทันทีอาจถูกรีเซ็ตกลับค่าเริ่มต้น (React 19 ล้างฟอร์มหลัง action) */
+async function save(page: Page, name: string) {
+  await Promise.all([page.waitForResponse((r) => r.request().method() === 'POST'), page.getByRole('button', { name }).click()]);
+  await page.waitForLoadState('networkidle');
+}
 
 test.describe('Continual Improvement: ดูข้อมูล (สมาชิก CAB — ไม่มีสิทธิ์จัดการ)', () => {
   test.use({ storageState: authFile('cab') });

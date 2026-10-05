@@ -5,7 +5,11 @@ const rowOf = (page: Page, text: string) => page.getByRole('row').filter({ hasTe
 const tile = (page: Page, label: string) => page.getByTestId('tiles').getByRole('link', { name: new RegExp(`^${label}`) });
 const step = (page: Page) => page.locator('li[aria-current="step"]');
 const pkg = (page: Page) => page.getByTestId('package');
-const save = (page: Page, name: string) => Promise.all([page.waitForResponse((r) => r.request().method() === 'POST'), page.getByRole('button', { name }).click()]);
+/** กดบันทึกแล้วรอทั้งการตอบกลับของ action และการรีเรนเดอร์ — ไม่งั้นช่องที่เลือกต่อทันทีอาจถูกรีเซ็ตกลับค่าเริ่มต้น (React 19 ล้างฟอร์มหลัง action) */
+async function save(page: Page, name: string) {
+  await Promise.all([page.waitForResponse((r) => r.request().method() === 'POST'), page.getByRole('button', { name }).click()]);
+  await page.waitForLoadState('networkidle');
+}
 /** เลือก Change ในรายการ "เพิ่ม Change" ตามเลขที่ (ค่าของตัวเลือกคือเลขที่เอกสาร) แล้วกดเพิ่ม */
 async function addChange(page: Page, docNo: string) {
   const select = page.getByLabel(/^เพิ่ม Change/);

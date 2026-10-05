@@ -17,6 +17,13 @@ describe('checkAccess', () => {
     expect(checkAccess('/api/monitoring/events/x', null)).toEqual({ allow: false, redirect: '/login' });
     expect(checkAccess('/api/monitoring', null)).toEqual({ allow: false, redirect: '/login' });
   });
+  it('เส้นทางเปิดการแจ้งเตือนเปิดให้ทุกบทบาทที่ล็อกอิน (รวมผู้ใช้ปลายทาง) แต่ไม่รวมพาธอื่นใต้ /notifications', () => {
+    expect(checkAccess('/notifications/open/abc123', 'END_USER')).toEqual({ allow: true });
+    expect(checkAccess('/notifications', 'END_USER')).toEqual({ allow: true });
+    expect(checkAccess('/notifications/open/a/b', 'END_USER')).toEqual({ allow: false, redirect: '/portal' });
+    expect(checkAccess('/notifications/other', 'END_USER')).toEqual({ allow: false, redirect: '/portal' });
+    expect(checkAccess('/notifications/open/abc', null)).toEqual({ allow: false, redirect: '/login' });
+  });
   it('ไม่ล็อกอิน → ส่งไป /login', () => {
     expect(checkAccess('/', null)).toEqual({ allow: false, redirect: '/login' });
     expect(checkAccess('/portal', undefined)).toEqual({ allow: false, redirect: '/login' });

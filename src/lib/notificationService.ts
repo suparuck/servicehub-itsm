@@ -3,6 +3,11 @@ import { DomainError } from './errors';
 
 export class NotificationError extends DomainError {}
 
+/** พาธภายในเท่านั้น (กัน open redirect): ขึ้นต้นด้วย / ไม่ใช่ // หรือ /\ และไม่มีอักขระควบคุม */
+export function safeInternalPath(p: string): boolean {
+  return p.startsWith('/') && !p.startsWith('//') && !p.startsWith('/' + String.fromCharCode(92)) && !/[\u0000-\u001f]/.test(p);
+}
+
 const LIST_LIMIT = 15;
 const KEEP_DAYS = 90;
 

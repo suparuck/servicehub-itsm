@@ -13,7 +13,7 @@ export function checkAccess(pathname: string, role: Role | undefined | null): Ac
   // หน้าบัญชีของตนเอง (เปลี่ยนรหัสผ่าน) — ทุกบทบาทที่ล็อกอินแล้ว
   if (pathname === '/account' || pathname.startsWith('/account/')) return { allow: true };
   // การแจ้งเตือนของตนเอง — ทุกบทบาทที่ล็อกอินแล้ว
-  if (pathname === '/notifications') return { allow: true };
+  if (pathname === '/notifications' || /^\/notifications\/open\/[^/]+$/.test(pathname)) return { allow: true };
   const isPortal = pathname === '/portal' || pathname.startsWith('/portal/');
   // พอร์ทัลเปิดให้ทุกบทบาทที่ล็อกอินแล้ว · หน้าเจ้าหน้าที่ปิดสำหรับผู้ใช้ปลายทาง
   if (!isPortal && role === 'END_USER') return { allow: false, redirect: '/portal' };

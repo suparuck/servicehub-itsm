@@ -53,7 +53,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                 <div className="flex min-w-0 grow flex-col gap-0.5">
                   <span className={n.read ? 'text-sm' : 'text-sm font-semibold'}>
                     {!n.read && <span className="sr-only">{t.unreadMark} </span>}
-                    {n.href ? <Link href={n.href} className="text-ink hover:text-accent">{n.title}</Link> : n.title}
+                    {n.href ? <a href={`/notifications/open/${n.id}`} className="text-ink hover:text-accent">{n.title}</a> : n.title}
                   </span>
                   {n.body && <span className="text-xs text-muted">{n.body}</span>}
                   <span className="text-xs text-muted">{thDateTime(n.createdAt)}</span>

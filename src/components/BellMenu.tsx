@@ -110,7 +110,7 @@ export function BellMenu({ unread, items }: { unread: number; items: BellItem[] 
                 return (
                   <li key={n.id}>
                     {n.href ? (
-                      <Link href={n.href} className={cls} onClick={() => { setOpen(false); if (!n.read) read(n.id); }}>{inner}</Link>
+                      <a href={`/notifications/open/${n.id}`} className={cls}>{inner}</a>
                     ) : (
                       <button type="button" className={`${cls} w-full bg-transparent`} onClick={() => { if (!n.read) read(n.id); }}>{inner}</button>
                     )}
