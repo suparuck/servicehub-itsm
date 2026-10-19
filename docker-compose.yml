@@ -18,7 +18,7 @@ services:
 
   # กล่องจดหมายทดสอบ: SMTP :1025 · เว็บดูอีเมล http://localhost:8025 (อีเมลไม่ออกอินเทอร์เน็ตจริง)
   mailpit:
-    image: axllent/mailpit:v1.31.4
+    image: axllent/mailpit:v1.31.6
     ports:
       - "8025:8025"
       - "1025:1025"
